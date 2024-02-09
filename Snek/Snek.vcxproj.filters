@@ -18,9 +18,15 @@
     <ClCompile Include="snek.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="gameWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="snek.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gameWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

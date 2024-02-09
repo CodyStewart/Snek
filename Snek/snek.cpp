@@ -5,18 +5,22 @@
 #include <stdio.h>
 #include <string>
 
+#include "gameWindow.h"
+
 bool init();
 
 bool loadMedia();
 
 void close();
 
-SDL_Window* window = NULL;
+GameWindow* window = new GameWindow();
 
 SDL_Renderer* renderer = NULL;
 
-const int SCREEN_WIDTH = 1920;
-const int SCREEN_HEIGHT = 1080;
+const int DEFAULT_SCREEN_WIDTH = 1920;
+const int DEFAULT_SCREEN_HEIGHT = 1080;
+int CURRENT_SCREEN_WIDTH = DEFAULT_SCREEN_WIDTH;
+int CURRENT_SCREEN_HEIGHT = DEFAULT_SCREEN_HEIGHT;
 
 TTF_Font* DefaultFont = NULL;
 
@@ -34,13 +38,12 @@ bool init() {
 			printf("Warning: Linear texture filtering not enabled!");
 		}
 
-		window = SDL_CreateWindow("Tic Tac Toe", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-		if (window == NULL) {
+		if(!window->init(DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT)) {
 			printf("Window was not created! SDL_Error: %s\n", SDL_GetError());
 			success = false;
 		}
 		else {
-			renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+			renderer = window->createRenderer();
 			if (renderer == NULL) {
 				printf("Renderer was not created! SDL_Error: %s\n", SDL_GetError());
 			}
@@ -107,8 +110,7 @@ void close() {
 	SDL_DestroyRenderer(renderer);
 	renderer = NULL;
 
-	SDL_DestroyWindow(window);
-	window = NULL;
+	window->free();
 
 	Mix_Quit();
 	TTF_Quit();
@@ -120,6 +122,10 @@ void Render(SDL_Renderer* renderer) {
 	SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
 	SDL_RenderClear(renderer);
 	SDL_RenderPresent(renderer);
+}
+
+void Update(Uint32 deltaT) {
+
 }
 
 int main(int argc, char* args[]) {
@@ -140,6 +146,10 @@ int main(int argc, char* args[]) {
 
 			bool runGame = true;
 
+			Uint32 startTime = SDL_GetTicks();
+			Uint32 endTime = 0;
+			Uint32 deltaT = 0;
+
 			while (runGame) {
 				while (SDL_PollEvent(&e) != 0) {
 					if (e.type == SDL_QUIT) {
@@ -156,9 +166,21 @@ int main(int argc, char* args[]) {
 							break;
 						}
 					}
+
+					window->handleEvent(e, renderer);
 				}
 
-				Render(renderer);
+				endTime = SDL_GetTicks();
+				deltaT = endTime - startTime;
+
+				Update(deltaT);
+				
+				startTime = endTime;
+
+				if (!window->isMinimized()) {
+					Render(renderer);
+				}
+
 			}
 		}
 	}
