@@ -10,19 +10,28 @@ Texture::~Texture() {
 	free();
 }
 
-SDL_Texture* Texture::loadTextureFromFile(SDL_Renderer* renderer, std::string path) {
+bool Texture::loadTextureFromFile(SDL_Renderer* renderer, std::string path) {
 	texture = IMG_LoadTexture(renderer, path.c_str());
+	if (texture != NULL) {
+		SDL_QueryTexture(texture, NULL, NULL, &width, &height);
+		return true;
+	}
+	else {
+		return false;
+	}
 }
 
 void Texture::render(SDL_Renderer* renderer, int x, int y, SDL_Rect* clip) {
-	SDL_Rect renderQuad = { x, y, width, height };
+	if (texture != NULL) {
+		SDL_Rect renderQuad = { x, y, width, height };
 
-	if (clip != NULL) {
-		renderQuad.w = clip->w;
-		renderQuad.h = clip->h;
+		if (clip != NULL) {
+			renderQuad.w = clip->w;
+			renderQuad.h = clip->h;
+		}
+
+		SDL_RenderCopy(renderer, texture, clip, &renderQuad);
 	}
-
-	SDL_RenderCopy(renderer, texture, clip, &renderQuad);
 }
 
 void Texture::free() {

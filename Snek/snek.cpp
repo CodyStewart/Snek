@@ -6,6 +6,7 @@
 #include <string>
 
 #include "gameWindow.h"
+#include "texture.h"
 
 bool init();
 

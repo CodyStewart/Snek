@@ -12,7 +12,7 @@ struct Texture
 
 	~Texture();
 
-	SDL_Texture* loadTextureFromFile(SDL_Renderer* renderer, std::string path);
+	bool loadTextureFromFile(SDL_Renderer* renderer, std::string path);
 	
 	void free();
 

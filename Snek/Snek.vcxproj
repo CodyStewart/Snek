@@ -134,10 +134,12 @@
   <ItemGroup>
     <ClCompile Include="snek.cpp" />
     <ClCompile Include="gameWindow.cpp" />
+    <ClCompile Include="texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="snek.h" />
     <ClInclude Include="gameWindow.h" />
+    <ClInclude Include="texture.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
