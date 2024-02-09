@@ -111,6 +111,7 @@ void close() {
 	renderer = NULL;
 
 	window->free();
+	free(window);
 
 	Mix_Quit();
 	TTF_Quit();
@@ -150,6 +151,10 @@ int main(int argc, char* args[]) {
 			Uint32 endTime = 0;
 			Uint32 deltaT = 0;
 
+			Uint32 fps = 0;
+			int countedFrames = 0;
+			fps = SDL_GetTicks();
+
 			while (runGame) {
 				while (SDL_PollEvent(&e) != 0) {
 					if (e.type == SDL_QUIT) {
@@ -170,6 +175,11 @@ int main(int argc, char* args[]) {
 					window->handleEvent(e, renderer);
 				}
 
+				fps = SDL_GetTicks();
+				float avgFPS = countedFrames / (fps / 1000.0f);
+				if (avgFPS > 20000)
+					avgFPS = 0;
+
 				endTime = SDL_GetTicks();
 				deltaT = endTime - startTime;
 
@@ -181,7 +191,10 @@ int main(int argc, char* args[]) {
 					Render(renderer);
 				}
 
+				++countedFrames;
 			}
+
+			close();
 		}
 	}
 
