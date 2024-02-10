@@ -4,9 +4,11 @@
 #include <SDL_ttf.h>
 #include <stdio.h>
 #include <string>
+#include <sstream>
 
 #include "gameWindow.h"
 #include "texture.h"
+#include "timer.h"
 
 bool init();
 
@@ -24,6 +26,8 @@ int CURRENT_SCREEN_WIDTH = DEFAULT_SCREEN_WIDTH;
 int CURRENT_SCREEN_HEIGHT = DEFAULT_SCREEN_HEIGHT;
 
 TTF_Font* DefaultFont = NULL;
+
+TextTexture* tb = new TextTexture();
 
 bool init() {
 	bool success = true;
@@ -88,11 +92,11 @@ bool loadMedia() {
 	//	//success = false;
 	//}
 
-	//DefaultFont = TTF_OpenFont("arial.ttf", 24);
-	//if (DefaultFont == NULL) {
-	//	printf("TTF could not open font! SDL_ttf Error: %s\n", TTF_GetError());
-	//	success = false;
-	//}
+	DefaultFont = TTF_OpenFont("consola.ttf", 36);
+	if (DefaultFont == NULL) {
+		printf("TTF could not open font! SDL_ttf Error: %s\n", TTF_GetError());
+		success = false;
+	}
 
 	return success;
 }
@@ -123,6 +127,7 @@ void close() {
 void Render(SDL_Renderer* renderer) {
 	SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
 	SDL_RenderClear(renderer);
+	tb->render(renderer, 0, 0, NULL);
 	SDL_RenderPresent(renderer);
 }
 
@@ -152,9 +157,14 @@ int main(int argc, char* args[]) {
 			Uint32 endTime = 0;
 			Uint32 deltaT = 0;
 
-			Uint32 fps = 0;
+			Timer timeSinceLastFrame = Timer();
+			timeSinceLastFrame.start();
+
+			Uint32 totalMS = 0;
 			int countedFrames = 0;
-			fps = SDL_GetTicks();
+			totalMS = SDL_GetTicks();
+
+			std::stringstream ss;
 
 			while (runGame) {
 				while (SDL_PollEvent(&e) != 0) {
@@ -176,17 +186,23 @@ int main(int argc, char* args[]) {
 					window->handleEvent(e, renderer);
 				}
 
-				fps = SDL_GetTicks();
-				float avgFPS = countedFrames / (fps / 1000.0f);
+				ss.str("");
+				totalMS = SDL_GetTicks();
+				float avgFPS = countedFrames / (totalMS / 1000.0f);
+				avgFPS = floor(avgFPS);
 				if (avgFPS > 20000)
 					avgFPS = 0;
 
-				endTime = SDL_GetTicks();
-				deltaT = endTime - startTime;
+				deltaT = timeSinceLastFrame.getTicks();
+				ss << "avgFPS: " << avgFPS << "   deltaT: " << deltaT;
+				tb->loadFromRenderedText(renderer, ss.str().c_str(), DefaultFont, {255,255,255});
+				timeSinceLastFrame.start();
 
-				Update(deltaT);
-				
-				startTime = endTime;
+				float framerate = 1000.0f / deltaT;
+
+				if (deltaT == 0) {
+					Update(deltaT);
+				}
 
 				if (!window->isMinimized()) {
 					Render(renderer);
