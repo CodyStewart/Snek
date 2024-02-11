@@ -3,6 +3,8 @@
 
 #include "gameWindow.h"
 
+extern bool windowResized;
+
 GameWindow::GameWindow() {
 	gWindow = nullptr;
 	mouseFocus = false;
@@ -37,6 +39,7 @@ void GameWindow::handleEvent(SDL_Event& e, SDL_Renderer* renderer) {
 		case SDL_WINDOWEVENT_SIZE_CHANGED:
 			width = e.window.data1;
 			height = e.window.data2;
+			windowResized = true;
 			SDL_RenderPresent(renderer);
 			break;
 

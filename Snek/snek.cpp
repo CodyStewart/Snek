@@ -7,6 +7,7 @@
 #include <sstream>
 
 #include "gameWindow.h"
+#include "GameWorld.h"
 #include "texture.h"
 #include "timer.h"
 
@@ -22,8 +23,20 @@ SDL_Renderer* renderer = NULL;
 
 const int DEFAULT_SCREEN_WIDTH = 1920;
 const int DEFAULT_SCREEN_HEIGHT = 1080;
+const int paddingX = 5;
+const int paddingY = 10;
+
 int CURRENT_SCREEN_WIDTH = DEFAULT_SCREEN_WIDTH;
 int CURRENT_SCREEN_HEIGHT = DEFAULT_SCREEN_HEIGHT;
+
+const int NUMOFCOLS = 25;
+const int NUMOFROWS = NUMOFCOLS;
+
+int UNIT_DISTANCE = (DEFAULT_SCREEN_HEIGHT - paddingY) / NUMOFCOLS;
+
+bool windowResized = false;
+
+GameWorld gameWorld = GameWorld(UNIT_DISTANCE, NUMOFROWS, NUMOFCOLS);
 
 TTF_Font* DefaultFont = NULL;
 
@@ -127,6 +140,7 @@ void close() {
 void Render(SDL_Renderer* renderer) {
 	SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
 	SDL_RenderClear(renderer);
+	gameWorld.render(renderer);
 	tb->render(renderer, 0, 0, NULL);
 	SDL_RenderPresent(renderer);
 }
@@ -184,6 +198,16 @@ int main(int argc, char* args[]) {
 					}
 
 					window->handleEvent(e, renderer);
+					if (windowResized) {
+						windowResized = false;
+
+						UNIT_DISTANCE = (window->getHeight() - paddingY) / NUMOFCOLS;
+						
+						CURRENT_SCREEN_HEIGHT = window->getHeight();
+						CURRENT_SCREEN_WIDTH = window->getWidth();
+						
+						gameWorld.resizeGameWorld(UNIT_DISTANCE);
+					}
 				}
 
 				ss.str("");
