@@ -82,3 +82,12 @@ void GameWorld::resizeGameWorld(int newSize) {
 		}
 	}
 }
+
+Cell* GameWorld::getGrid() {
+	return *grid;
+}
+
+Cell* GameWorld::getCell(int row, int col) {
+	// return cell at row, column
+	return &grid[row][col];
+}

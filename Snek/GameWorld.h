@@ -43,6 +43,9 @@ struct GameWorld {
 
 	void resizeGameWorld(int newSize);
 
+	Cell* getGrid();
+	Cell* getCell(int row, int col);
+
 private:
 	Cell grid[25][25];
 

@@ -133,6 +133,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="actor.cpp" />
     <ClCompile Include="GameWorld.cpp" />
     <ClCompile Include="snek.cpp" />
     <ClCompile Include="gameWindow.cpp" />
@@ -140,6 +141,7 @@
     <ClCompile Include="timer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="actor.h" />
     <ClInclude Include="GameWorld.h" />
     <ClInclude Include="snek.h" />
     <ClInclude Include="gameWindow.h" />

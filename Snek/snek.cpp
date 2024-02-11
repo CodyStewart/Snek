@@ -6,10 +6,12 @@
 #include <string>
 #include <sstream>
 
+#include "snek.h"
 #include "gameWindow.h"
 #include "GameWorld.h"
 #include "texture.h"
 #include "timer.h"
+#include "actor.h"
 
 bool init();
 
@@ -29,14 +31,12 @@ const int paddingY = 10;
 int CURRENT_SCREEN_WIDTH = DEFAULT_SCREEN_WIDTH;
 int CURRENT_SCREEN_HEIGHT = DEFAULT_SCREEN_HEIGHT;
 
-const int NUMOFCOLS = 25;
-const int NUMOFROWS = NUMOFCOLS;
-
-int UNIT_DISTANCE = (DEFAULT_SCREEN_HEIGHT - paddingY) / NUMOFCOLS;
+uint UNIT_DISTANCE = (DEFAULT_SCREEN_HEIGHT - paddingY) / NUMOFCOLS;
 
 bool windowResized = false;
 
 GameWorld gameWorld = GameWorld(UNIT_DISTANCE, NUMOFROWS, NUMOFCOLS);
+Snake snake = Snake(&gameWorld);
 
 TTF_Font* DefaultFont = NULL;
 
@@ -141,12 +141,13 @@ void Render(SDL_Renderer* renderer) {
 	SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
 	SDL_RenderClear(renderer);
 	gameWorld.render(renderer);
+	snake.render(renderer);
 	tb->render(renderer, 0, 0, NULL);
 	SDL_RenderPresent(renderer);
 }
 
 void Update(Uint32 deltaT) {
-
+	snake.move(deltaT);
 }
 
 int main(int argc, char* args[]) {
@@ -180,6 +181,8 @@ int main(int argc, char* args[]) {
 
 			std::stringstream ss;
 
+			snake.setSpeed(5);
+
 			while (runGame) {
 				while (SDL_PollEvent(&e) != 0) {
 					if (e.type == SDL_QUIT) {
@@ -192,9 +195,34 @@ int main(int argc, char* args[]) {
 							runGame = false;
 							break;
 
+						case SDLK_a:
+							if (snake.getDirection() != RIGHT) {
+								snake.setDesiredDirection(LEFT);
+							}
+							break;
+						
+						case SDLK_d:
+							if (snake.getDirection() != LEFT) {
+								snake.setDesiredDirection(RIGHT);
+							}
+							break;
+						
+						case SDLK_w:
+							if (snake.getDirection() != DOWN) {
+								snake.setDesiredDirection(UP);
+							}
+							break;
+
+						case SDLK_s:
+							if (snake.getDirection() != UP) {
+								snake.setDesiredDirection(DOWN);
+							}
+							break;
+
 						default:
 							break;
 						}
+
 					}
 
 					window->handleEvent(e, renderer);
@@ -224,9 +252,7 @@ int main(int argc, char* args[]) {
 
 				float framerate = 1000.0f / deltaT;
 
-				if (deltaT == 0) {
-					Update(deltaT);
-				}
+				Update(deltaT);
 
 				if (!window->isMinimized()) {
 					Render(renderer);
