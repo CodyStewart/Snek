@@ -2,12 +2,20 @@
 #ifndef GAMEWORLD_H
 #define GAMEWORLD_H
 
+#include <random>
+
+#include "snek.h"
 #include "texture.h"
 
 extern int CURRENT_SCREEN_WIDTH;
 extern int UNIT_DISTANCE;
 
 extern const int paddingY;
+
+struct PickUp;
+struct SizeUp;
+
+extern std::vector<PickUp*> pickupGathering;
 
 // Cells are always square, so length = width
 struct Cell {
@@ -40,6 +48,8 @@ struct GameWorld {
 	GameWorld(int unitDist, const int numRows, const int numCols);
 
 	void render(SDL_Renderer* renderer);
+
+	void generatePickups(Uint32 delta);
 
 	void resizeGameWorld(int newSize);
 

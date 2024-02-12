@@ -6,7 +6,7 @@ Snake::Snake(GameWorld* world) {
 	bodyColor = { 0, 0, 255 };
 
 	headPosition = getHeadPosition();
-	speed = 0;
+	speed = 5;
 	bodyLength = (uint)body.size();
 	direction = UP;
 	desiredDirection = UP;
@@ -222,3 +222,50 @@ void Snake::setSnakePosition(SDL_Point pos)  {
 	headPosition.x = pos.x;
 	headPosition.y = pos.y;
 }
+
+PickUp::PickUp() {
+	puPosition = { 0,0 };
+	Cell cell = Cell();
+}
+
+void PickUp::render(SDL_Renderer* renderer) {
+
+}
+
+void PickUp::handle(Snake snek) {
+
+}
+
+//Cell PickUp::getCell() {
+//
+//}
+
+SizeUp::SizeUp() {
+	puPosition = { 0,0 };
+	Cell cell = Cell();
+}
+
+SizeUp::SizeUp(SDL_Color szColor, Cell* cell) {
+	puCell.setColor(szColor);
+	SDL_Rect* puRect = puCell.getRect();
+	SDL_Rect* cellRect = cell->getRect();
+	puRect->x = cellRect->x;
+	puRect->y = cellRect->y;
+	puRect->w = cellRect->w;
+	puRect->h = cellRect->h;
+	puCell.setDimensions(puRect->h);
+}
+
+void SizeUp::handle(Snake snek) {
+	snek.increaseSize();
+}
+
+void SizeUp::render(SDL_Renderer* renderer) {
+	SDL_Color pickupColor = puCell.getColor();
+	SDL_SetRenderDrawColor(renderer, pickupColor.r, pickupColor.g, pickupColor.b, 0xFF);
+	SDL_RenderFillRect(renderer, puCell.getRect());
+}
+
+//Cell SizeUp::getCell() {
+//	return puCell;
+//}

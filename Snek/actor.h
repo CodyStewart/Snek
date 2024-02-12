@@ -51,4 +51,26 @@ private:
 	Direction desiredDirection;
 };
 
+struct PickUp {
+	PickUp();
+
+	virtual void handle(Snake snek);
+	virtual void render(SDL_Renderer* renderer);
+
+	//virtual Cell getCell();
+
+protected:
+	Cell puCell;
+	GridPosition puPosition;
+};
+
+struct SizeUp : public PickUp {
+	SizeUp();
+	SizeUp(SDL_Color szColor, Cell* cell);
+
+	void handle(Snake snek) override;
+	void render(SDL_Renderer* renderer) override;
+	//Cell getCell() override;
+};
+
 #endif // !ACTOR_H

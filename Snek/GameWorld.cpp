@@ -1,4 +1,5 @@
 #include "GameWorld.h"
+#include "actor.h"
 
 Cell::Cell() {
 	cellTexture = nullptr;
@@ -65,6 +66,28 @@ void GameWorld::render(SDL_Renderer* renderer) {
 			//grid[numOfRows * row + col].render(renderer);
 			grid[row][col].render(renderer);
 		}
+	}
+}
+
+void GameWorld::generatePickups(Uint32 delta) {
+	static Uint32 accumulatedTime = 0;
+	accumulatedTime += delta;
+
+	if (accumulatedTime >= 5000) {
+		accumulatedTime = 0;
+
+		srand(SDL_GetTicks());
+		int randCol, randRow;
+		randCol = rand() % NUMOFCOLS;
+		randRow = rand() % NUMOFROWS;
+
+		SDL_Color Red = { 255, 0, 0 };
+
+		Cell* puCell = &grid[randRow][randCol];
+
+		SizeUp* sizeup = new SizeUp(Red, puCell);
+
+		pickupGathering.push_back(sizeup);
 	}
 }
 

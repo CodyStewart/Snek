@@ -37,6 +37,7 @@ bool windowResized = false;
 
 GameWorld gameWorld = GameWorld(UNIT_DISTANCE, NUMOFROWS, NUMOFCOLS);
 Snake snake = Snake(&gameWorld);
+std::vector<PickUp*> pickupGathering;
 
 TTF_Font* DefaultFont = NULL;
 
@@ -141,6 +142,9 @@ void Render(SDL_Renderer* renderer) {
 	SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
 	SDL_RenderClear(renderer);
 	gameWorld.render(renderer);
+	for (int i = 0; i < pickupGathering.size(); i++) {
+		pickupGathering[i]->render(renderer);
+	}
 	snake.render(renderer);
 	tb->render(renderer, 0, 0, NULL);
 	SDL_RenderPresent(renderer);
@@ -148,6 +152,7 @@ void Render(SDL_Renderer* renderer) {
 
 void Update(Uint32 deltaT) {
 	snake.move(deltaT);
+	gameWorld.generatePickups(deltaT);
 }
 
 int main(int argc, char* args[]) {
@@ -181,8 +186,6 @@ int main(int argc, char* args[]) {
 
 			std::stringstream ss;
 
-			snake.setSpeed(5);
-
 			while (runGame) {
 				while (SDL_PollEvent(&e) != 0) {
 					if (e.type == SDL_QUIT) {
@@ -195,24 +198,28 @@ int main(int argc, char* args[]) {
 							runGame = false;
 							break;
 
+						case SDLK_LEFT:
 						case SDLK_a:
 							if (snake.getDirection() != RIGHT) {
 								snake.setDesiredDirection(LEFT);
 							}
 							break;
 						
+						case SDLK_RIGHT:
 						case SDLK_d:
 							if (snake.getDirection() != LEFT) {
 								snake.setDesiredDirection(RIGHT);
 							}
 							break;
 						
+						case SDLK_UP:
 						case SDLK_w:
 							if (snake.getDirection() != DOWN) {
 								snake.setDesiredDirection(UP);
 							}
 							break;
 
+						case SDLK_DOWN:
 						case SDLK_s:
 							if (snake.getDirection() != UP) {
 								snake.setDesiredDirection(DOWN);
