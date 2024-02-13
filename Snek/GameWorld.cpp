@@ -7,6 +7,7 @@ Cell::Cell() {
 	cellBlock = {};
 
 	width = length = 0;
+	occupied = false;
 }
 
 void Cell::render(SDL_Renderer* renderer) {
@@ -32,11 +33,16 @@ void Cell::setDimensions(int dim) {
 	cellBlock.w = cellBlock.h = dim;
 }
 
+void Cell::setOccupied(bool isOccupied) {
+	occupied = isOccupied;
+}
+
 Texture* Cell::getTexture() { return cellTexture; }
 SDL_Color Cell::getColor() { return cellColor; }
 SDL_Rect* Cell::getRect() { return &cellBlock; }
 int Cell::getWidth() { return width; }
 int Cell::getLength() { return length; }
+bool Cell::getOccupied() { return occupied; }
 
 GameWorld::GameWorld(int unitDist, const int numRows, const int numCols) {
 	unitDistance = unitDist;
@@ -78,8 +84,18 @@ void GameWorld::generatePickups(Uint32 delta) {
 
 		srand(SDL_GetTicks());
 		int randCol, randRow;
+
 		randCol = rand() % NUMOFCOLS;
 		randRow = rand() % NUMOFROWS;
+		int maxThreshold = 100;
+		int loopCount = 0;
+		bool cellIsOccupied = gameWorld.getCell(randRow, randCol)->getOccupied();
+		while (cellIsOccupied && loopCount < maxThreshold) {
+			randCol = rand() % NUMOFCOLS;
+			randRow = rand() % NUMOFROWS;
+			cellIsOccupied = gameWorld.getCell(randRow, randCol)->getOccupied();
+			loopCount++;
+		}
 
 		SDL_Color Red = { 255, 0, 0 };
 
@@ -104,6 +120,19 @@ void GameWorld::resizeGameWorld(int newSize) {
 			grid[row][col].setDimensions(newSize);
 		}
 	}
+}
+
+GridPosition GameWorld::convertCoordsToRowCol(int x, int y) {
+	GridPosition gp;
+
+	// get the column and row number based on the coords provided
+	int colNum = (x - grid[0][0].getRect()->x) / unitDistance; // we use the first cell in the grid to find our x and y screen padding
+	int rowNum = (y - grid[0][0].getRect()->y) / unitDistance;
+
+	gp.column = colNum;
+	gp.row = rowNum;
+
+	return gp;
 }
 
 Cell* GameWorld::getGrid() {

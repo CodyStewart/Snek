@@ -34,6 +34,8 @@ int CURRENT_SCREEN_HEIGHT = DEFAULT_SCREEN_HEIGHT;
 uint UNIT_DISTANCE = (DEFAULT_SCREEN_HEIGHT - paddingY) / NUMOFCOLS;
 
 bool windowResized = false;
+bool runGame = true;
+bool endGameState = false;
 
 GameWorld gameWorld = GameWorld(UNIT_DISTANCE, NUMOFROWS, NUMOFCOLS);
 Snake snake = Snake(&gameWorld);
@@ -42,6 +44,7 @@ std::vector<PickUp*> pickupGathering;
 TTF_Font* DefaultFont = NULL;
 
 TextTexture* tb = new TextTexture();
+TextTexture* winLoseText = new TextTexture();
 
 bool init() {
 	bool success = true;
@@ -147,11 +150,18 @@ void Render(SDL_Renderer* renderer) {
 	}
 	snake.render(renderer);
 	tb->render(renderer, 0, 0, NULL);
+	if (endGameState)
+		winLoseText->render(renderer, CURRENT_SCREEN_WIDTH / 2, CURRENT_SCREEN_HEIGHT / 2);
 	SDL_RenderPresent(renderer);
 }
 
+
+
 void Update(Uint32 deltaT) {
-	snake.move(deltaT);
+	snake.move(deltaT, &gameWorld);
+	if (snake.checkCollisions()) {
+		endGameState = true;
+	}
 	gameWorld.generatePickups(deltaT);
 }
 
@@ -171,8 +181,6 @@ int main(int argc, char* args[]) {
 
 			SDL_Event e;
 
-			bool runGame = true;
-
 			Uint32 startTime = SDL_GetTicks();
 			Uint32 endTime = 0;
 			Uint32 deltaT = 0;
@@ -185,6 +193,8 @@ int main(int argc, char* args[]) {
 			totalMS = SDL_GetTicks();
 
 			std::stringstream ss;
+
+			winLoseText->loadFromRenderedText(renderer, "The game is over!", DefaultFont, { 255,255,255 });
 
 			while (runGame) {
 				while (SDL_PollEvent(&e) != 0) {
@@ -259,13 +269,19 @@ int main(int argc, char* args[]) {
 
 				float framerate = 1000.0f / deltaT;
 
-				Update(deltaT);
+				if (!endGameState) {
+					Update(deltaT);
+				}
 
 				if (!window->isMinimized()) {
 					Render(renderer);
 				}
 
 				++countedFrames;
+
+				if (endGameState) {
+
+				}
 			}
 
 			close();

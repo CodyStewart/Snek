@@ -8,6 +8,8 @@
 #include "GameWorld.h"
 #include "texture.h"
 
+extern GameWorld gameWorld;
+
 enum Direction {
 	UP,
 	DOWN,
@@ -20,8 +22,9 @@ struct Snake {
 
 	void render(SDL_Renderer* renderer);
 
-	void move(Uint32 deltaT);
-	void moveByOne();
+	void move(Uint32 deltaT, GameWorld* gameWorld);
+	void moveByOne(GameWorld* gameWorld);
+	bool checkCollisions();
 
 	void increaseSize();
 
@@ -32,6 +35,7 @@ struct Snake {
 	void setDirection(Direction dir);
 	void setDesiredDirection(Direction dir);
 
+	std::vector<Cell>* getBody();
 	SDL_Point getHeadPosition();
 	GridPosition getGridPosition(); // position in the grid of the head (row, col)
 	Direction getDirection();

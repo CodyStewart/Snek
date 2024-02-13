@@ -27,12 +27,14 @@ struct Cell {
 	void setTexture(Texture* texture);
 	void setDimensions(int dim);
 	void setPosition(int x, int y);
+	void setOccupied(bool isOccupied);
 
 	Texture* getTexture();
 	SDL_Color getColor();
 	SDL_Rect* getRect();
 	int getWidth();
 	int getLength();
+	bool getOccupied();
 
 private:
 	Texture* cellTexture;
@@ -42,6 +44,7 @@ private:
 
 	int width;
 	int length;
+	bool occupied;
 };
 
 struct GameWorld {
@@ -52,6 +55,8 @@ struct GameWorld {
 	void generatePickups(Uint32 delta);
 
 	void resizeGameWorld(int newSize);
+
+	GridPosition convertCoordsToRowCol(int x, int y);
 
 	Cell* getGrid();
 	Cell* getCell(int row, int col);

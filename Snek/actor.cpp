@@ -1,5 +1,22 @@
 #include "actor.h"
 
+bool checkBodyCollisions(Snake snake) {
+	std::vector<Cell>* snakeBody = snake.getBody();
+	for (int firstCellCompared = 0; firstCellCompared < snakeBody->size() - 1; firstCellCompared++) {
+		for (int secondCellCompared = firstCellCompared + 1; secondCellCompared < snakeBody->size() - 1; secondCellCompared++) {
+			if ((*snakeBody)[firstCellCompared].getRect()->x == (*snakeBody)[secondCellCompared].getRect()->x && (*snakeBody)[firstCellCompared].getRect()->y == (*snakeBody)[secondCellCompared].getRect()->y)
+				return true;
+		}
+	}
+
+	return false;
+}
+
+void checkPickUpCollisions(Snake snake) {
+
+}
+
+
 Snake::Snake(GameWorld* world) {
 	setBody(world);
 	headTexture = nullptr;
@@ -12,7 +29,7 @@ Snake::Snake(GameWorld* world) {
 	desiredDirection = UP;
 }
 
-void Snake::move(Uint32 deltaT) {
+void Snake::move(Uint32 deltaT, GameWorld* gameWorld) {
 	// check if enough time has past for the snake to have moved
 	static Uint32 accumulatedTime = 0;
 	Uint32 timeToMove = 1000 / speed;
@@ -20,19 +37,32 @@ void Snake::move(Uint32 deltaT) {
 
 	if (accumulatedTime >= timeToMove) {
 		accumulatedTime = 0;
-		moveByOne();
+		moveByOne(gameWorld);
+		increaseSize();
 	}
 }
 
-void Snake::moveByOne() {
+void Snake::moveByOne(GameWorld* gameWorld) {
 	// move the snake one space based on direction
-	Cell tempHeadCell = head;
 	Cell tempBodyCell;
+
+	//// unset the cell uncovered by moving the tail
+	//Cell tailCell = body[body.size() - 1];
+	//GridPosition gp = gameWorld->convertCoordsToRowCol(tailCell.getRect()->x, tailCell.getRect()->y);
+	//Cell* gridCellUncovered = gameWorld->getCell(gp.row, gp.column);
+	//gridCellUncovered->setOccupied(false);
+
 	switch (desiredDirection)
 	{
 		case UP:
 			if (gridPosition.row > 0) {
-				// use the position of the head cell to update the body
+				// unset the cell uncovered by moving the tail
+				Cell tailCell = body[body.size() - 1];
+				GridPosition gp = gameWorld->convertCoordsToRowCol(tailCell.getRect()->x, tailCell.getRect()->y);
+				Cell* gridCellUncovered = gameWorld->getCell(gp.row, gp.column);
+				gridCellUncovered->setOccupied(false);
+
+				// work backwards from the tail and update the positions of the body
 				for (size_t bodyIndex = body.size() - 1; bodyIndex > 0; bodyIndex--) {
 					tempBodyCell = body[bodyIndex - 1];
 					body[bodyIndex].setPosition(tempBodyCell.getRect()->x, tempBodyCell.getRect()->y);
@@ -51,6 +81,12 @@ void Snake::moveByOne() {
 			break;
 		case DOWN:
 			if (gridPosition.row < NUMOFROWS - 1) {
+				// unset the cell uncovered by moving the tail
+				Cell tailCell = body[body.size() - 1];
+				GridPosition gp = gameWorld->convertCoordsToRowCol(tailCell.getRect()->x, tailCell.getRect()->y);
+				Cell* gridCellUncovered = gameWorld->getCell(gp.row, gp.column);
+				gridCellUncovered->setOccupied(false);
+
 				// work backwards from the tail and update the positions of the body
 				for (size_t bodyIndex = body.size() - 1; bodyIndex > 0; bodyIndex--) {
 					tempBodyCell = body[bodyIndex - 1];
@@ -70,6 +106,12 @@ void Snake::moveByOne() {
 			break;
 		case LEFT:
 			if (gridPosition.column > 0) {
+				// unset the cell uncovered by moving the tail
+				Cell tailCell = body[body.size() - 1];
+				GridPosition gp = gameWorld->convertCoordsToRowCol(tailCell.getRect()->x, tailCell.getRect()->y);
+				Cell* gridCellUncovered = gameWorld->getCell(gp.row, gp.column);
+				gridCellUncovered->setOccupied(false);
+
 				// work backwards from the tail and update the positions of the body
 				for (size_t bodyIndex = body.size() - 1; bodyIndex > 0; bodyIndex--) {
 					tempBodyCell = body[bodyIndex - 1];
@@ -89,6 +131,12 @@ void Snake::moveByOne() {
 			break;
 		case RIGHT:
 			if (gridPosition.column < NUMOFCOLS - 1) {
+				// unset the cell uncovered by moving the tail
+				Cell tailCell = body[body.size() - 1];
+				GridPosition gp = gameWorld->convertCoordsToRowCol(tailCell.getRect()->x, tailCell.getRect()->y);
+				Cell* gridCellUncovered = gameWorld->getCell(gp.row, gp.column);
+				gridCellUncovered->setOccupied(false);
+
 				// work backwards from the tail and update the positions of the body
 				for (size_t bodyIndex = body.size() - 1; bodyIndex > 0; bodyIndex--) {
 					tempBodyCell = body[bodyIndex - 1];
@@ -108,6 +156,22 @@ void Snake::moveByOne() {
 		default:
 			break;
 	}
+
+	// set the cell now under the head to occupied
+	Cell headCell = body[0];
+	GridPosition gp2 = gameWorld->convertCoordsToRowCol(headCell.getRect()->x, headCell.getRect()->y);
+	Cell* gridCellCovered = gameWorld->getCell(gp2.row, gp2.column);
+	gridCellCovered->setOccupied(true);
+}
+
+bool Snake::checkCollisions() {
+	if (checkBodyCollisions(*this)) {
+		printf("Body has collided with itself!\n");
+		return true;
+	}
+	//checkPickUpCollisions();
+
+	return false;
 }
 
 void Snake::increaseSize() {
@@ -127,23 +191,32 @@ void Snake::increaseSize() {
 	if (tailCellRect->x < penultCellRect->x) {
 		// tail is to the left of penultimate cell, add new cell to the left of tail
 		newCell.setPosition(tailCellRect->x - tailCellRect->w, tailCellRect->y);
+		GridPosition gp = gameWorld.convertCoordsToRowCol(tailCellRect->x - tailCellRect->w, tailCellRect->y);
+		gameWorld.getCell(gp.row, gp.column)->setOccupied(true);
 	}
 	else if (tailCellRect->x > penultCellRect->x) {
 		// tail is to the right of penultimate cell, add new cell to the right of tail
 		newCell.setPosition(tailCellRect->x + tailCellRect->w, tailCellRect->y);
+		GridPosition gp = gameWorld.convertCoordsToRowCol(tailCellRect->x + tailCellRect->w, tailCellRect->y);
+		gameWorld.getCell(gp.row, gp.column)->setOccupied(true);
 	}
 	else if (tailCellRect->y < penultCellRect->y) {
 		// tail is above penultimate cell, add new cell above tail
 		newCell.setPosition(tailCellRect->x, tailCellRect->y - tailCellRect->h);
+		GridPosition gp = gameWorld.convertCoordsToRowCol(tailCellRect->x, tailCellRect->y - tailCellRect->h);
+		gameWorld.getCell(gp.row, gp.column)->setOccupied(true);
 	}
 	else if (tailCellRect->y > penultCellRect->y) {
 		// tail is below penultimate cell, add new cell below tail
 		newCell.setPosition(tailCellRect->x, tailCellRect->y + tailCellRect->h);
+		GridPosition gp = gameWorld.convertCoordsToRowCol(tailCellRect->x, tailCellRect->y + tailCellRect->h);
+		gameWorld.getCell(gp.row, gp.column)->setOccupied(true);
 	}
 	else { // we should not be here
 		printf("ERROR! increaseSize() function has entered a section of code it should not be in!\n");
 	}
 
+	newCell.setOccupied(true);
 	body.push_back(newCell);
 	bodyLength++;
 }
@@ -166,6 +239,7 @@ void Snake::setSnakeColor(SDL_Color color) {
 
 void Snake::setBody(GameWorld* world) {
 	Cell* CellPtr = world->getCell(12, 4);
+	CellPtr->setOccupied(true);
 	gridPosition.row = 12;
 	gridPosition.column = 4;
 
@@ -175,16 +249,20 @@ void Snake::setBody(GameWorld* world) {
 	head.setColor({ 255,255,255 });
 	head.setPosition(elementRect->x, elementRect->y);
 	head.setDimensions(elementRect->w);
+	head.setOccupied(true);
 	body.push_back(head);
 
 	Cell bodyCell = Cell();
 	CellPtr = world->getCell(13, 4);
+	CellPtr->setOccupied(true);
 	elementRect = CellPtr->getRect();
 	bodyCell.setPosition(elementRect->x, elementRect->y);
 	bodyCell.setDimensions(elementRect->w);
+	bodyCell.setOccupied(true);
 	body.push_back(bodyCell);
 
 	CellPtr = world->getCell(14, 4);
+	CellPtr->setOccupied(true);
 	elementRect = CellPtr->getRect();
 	bodyCell.setPosition(elementRect->x, elementRect->y);
 	bodyCell.setDimensions(elementRect->w);
@@ -202,6 +280,8 @@ void Snake::setDirection(Direction dir) {
 void Snake::setDesiredDirection(Direction dir) {
 	desiredDirection = dir;
 }
+
+std::vector<Cell>* Snake::getBody() { return &body; }
 
 SDL_Point Snake::getHeadPosition() {
 	SDL_Rect* headRect = head.getRect();
