@@ -4,8 +4,14 @@
 #include <SDL_ttf.h>
 #include <stdio.h>
 #include <string>
+#include <sstream>
 
+#include "snek.h"
 #include "gameWindow.h"
+#include "GameWorld.h"
+#include "texture.h"
+#include "timer.h"
+#include "actor.h"
 
 bool init();
 
@@ -19,10 +25,26 @@ SDL_Renderer* renderer = NULL;
 
 const int DEFAULT_SCREEN_WIDTH = 1920;
 const int DEFAULT_SCREEN_HEIGHT = 1080;
+const int paddingX = 5;
+const int paddingY = 10;
+
 int CURRENT_SCREEN_WIDTH = DEFAULT_SCREEN_WIDTH;
 int CURRENT_SCREEN_HEIGHT = DEFAULT_SCREEN_HEIGHT;
 
+uint UNIT_DISTANCE = (DEFAULT_SCREEN_HEIGHT - paddingY) / NUMOFCOLS;
+
+bool windowResized = false;
+bool runGame = true;
+bool endGameState = false;
+
+GameWorld gameWorld = GameWorld(UNIT_DISTANCE, NUMOFROWS, NUMOFCOLS);
+Snake snake = Snake(&gameWorld);
+std::vector<PickUp*> pickupGathering;
+
 TTF_Font* DefaultFont = NULL;
+
+TextTexture* tb = new TextTexture();
+TextTexture* winLoseText = new TextTexture();
 
 bool init() {
 	bool success = true;
@@ -87,11 +109,11 @@ bool loadMedia() {
 	//	//success = false;
 	//}
 
-	//DefaultFont = TTF_OpenFont("arial.ttf", 24);
-	//if (DefaultFont == NULL) {
-	//	printf("TTF could not open font! SDL_ttf Error: %s\n", TTF_GetError());
-	//	success = false;
-	//}
+	DefaultFont = TTF_OpenFont("consola.ttf", 36);
+	if (DefaultFont == NULL) {
+		printf("TTF could not open font! SDL_ttf Error: %s\n", TTF_GetError());
+		success = false;
+	}
 
 	return success;
 }
@@ -111,6 +133,7 @@ void close() {
 	renderer = NULL;
 
 	window->free();
+	free(window);
 
 	Mix_Quit();
 	TTF_Quit();
@@ -121,11 +144,25 @@ void close() {
 void Render(SDL_Renderer* renderer) {
 	SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
 	SDL_RenderClear(renderer);
+	gameWorld.render(renderer);
+	for (int i = 0; i < pickupGathering.size(); i++) {
+		pickupGathering[i]->render(renderer);
+	}
+	snake.render(renderer);
+	tb->render(renderer, 0, 0, NULL);
+	if (endGameState)
+		winLoseText->render(renderer, CURRENT_SCREEN_WIDTH / 2, CURRENT_SCREEN_HEIGHT / 2);
 	SDL_RenderPresent(renderer);
 }
 
-void Update(Uint32 deltaT) {
 
+
+void Update(Uint32 deltaT) {
+	snake.move(deltaT, &gameWorld);
+	if (snake.checkCollisions()) {
+		endGameState = true;
+	}
+	gameWorld.generatePickups(deltaT);
 }
 
 int main(int argc, char* args[]) {
@@ -144,11 +181,20 @@ int main(int argc, char* args[]) {
 
 			SDL_Event e;
 
-			bool runGame = true;
-
 			Uint32 startTime = SDL_GetTicks();
 			Uint32 endTime = 0;
 			Uint32 deltaT = 0;
+
+			Timer timeSinceLastFrame = Timer();
+			timeSinceLastFrame.start();
+
+			Uint32 totalMS = 0;
+			int countedFrames = 0;
+			totalMS = SDL_GetTicks();
+
+			std::stringstream ss;
+
+			winLoseText->loadFromRenderedText(renderer, "The game is over!", DefaultFont, { 255,255,255 });
 
 			while (runGame) {
 				while (SDL_PollEvent(&e) != 0) {
@@ -162,26 +208,83 @@ int main(int argc, char* args[]) {
 							runGame = false;
 							break;
 
+						case SDLK_LEFT:
+						case SDLK_a:
+							if (snake.getDirection() != RIGHT) {
+								snake.setDesiredDirection(LEFT);
+							}
+							break;
+						
+						case SDLK_RIGHT:
+						case SDLK_d:
+							if (snake.getDirection() != LEFT) {
+								snake.setDesiredDirection(RIGHT);
+							}
+							break;
+						
+						case SDLK_UP:
+						case SDLK_w:
+							if (snake.getDirection() != DOWN) {
+								snake.setDesiredDirection(UP);
+							}
+							break;
+
+						case SDLK_DOWN:
+						case SDLK_s:
+							if (snake.getDirection() != UP) {
+								snake.setDesiredDirection(DOWN);
+							}
+							break;
+
 						default:
 							break;
 						}
+
 					}
 
 					window->handleEvent(e, renderer);
+					if (windowResized) {
+						windowResized = false;
+
+						UNIT_DISTANCE = (window->getHeight() - paddingY) / NUMOFCOLS;
+						
+						CURRENT_SCREEN_HEIGHT = window->getHeight();
+						CURRENT_SCREEN_WIDTH = window->getWidth();
+						
+						gameWorld.resizeGameWorld(UNIT_DISTANCE);
+					}
 				}
 
-				endTime = SDL_GetTicks();
-				deltaT = endTime - startTime;
+				ss.str("");
+				totalMS = SDL_GetTicks();
+				float avgFPS = countedFrames / (totalMS / 1000.0f);
+				avgFPS = floor(avgFPS);
+				if (avgFPS > 20000)
+					avgFPS = 0;
 
-				Update(deltaT);
-				
-				startTime = endTime;
+				deltaT = timeSinceLastFrame.getTicks();
+				ss << "avgFPS: " << avgFPS << "   deltaT: " << deltaT;
+				tb->loadFromRenderedText(renderer, ss.str().c_str(), DefaultFont, {255,255,255});
+				timeSinceLastFrame.start();
+
+				float framerate = 1000.0f / deltaT;
+
+				if (!endGameState) {
+					Update(deltaT);
+				}
 
 				if (!window->isMinimized()) {
 					Render(renderer);
 				}
 
+				++countedFrames;
+
+				if (endGameState) {
+
+				}
 			}
+
+			close();
 		}
 	}
 
