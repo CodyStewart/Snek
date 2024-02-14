@@ -30,13 +30,15 @@ void checkPickUpCollisions(Snake* snake) {
 
 	for (std::vector<PickUp*>::iterator iter = pickupGathering.begin(); iter != pickupGathering.end(); iter++) {
 		Cell pickupCell = (**iter).getCell();
-		/*PickUp* pk = *iter;
-		Cell pickupCell = pk->getCell();*/
 		SDL_Rect* pickupRect = pickupCell.getRect();
 		if (snakeHeadRect->x == pickupRect->x && snakeHeadRect->y == pickupRect->y) {
 			snake->increaseSize();
-			snake->increaseSpeed(1);
+			uint newSpeed = 10 + gameScore;
+			snake->setSpeed((uint)(newSpeed / 2));
 			pickupGathering.erase(iter);
+
+			Mix_PlayChannel(-1, sound, 0);
+			gameScore++;
 			break;
 		}
 	}

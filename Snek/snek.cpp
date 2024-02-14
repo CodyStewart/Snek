@@ -38,6 +38,7 @@ bool windowResized = false;
 bool runGame = true;
 bool endGameState = false;
 bool menuIsOpen = false;
+uint gameScore = 0;
 
 GameWorld gameWorld = GameWorld(UNIT_DISTANCE, NUMOFROWS, NUMOFCOLS);
 Snake snake = Snake(&gameWorld);
@@ -47,10 +48,23 @@ TTF_Font* DefaultFont = NULL;
 
 TextTexture* tb = new TextTexture();
 TextTexture* winLoseText = new TextTexture();
+TextTexture* score = new TextTexture();
+
 Menu* menu;
 
-void makeIncrease() {
-	snake.increaseSize();
+Mix_Music* music;
+Mix_Chunk* sound;
+
+void restartGame() {
+	gameScore = 0;
+	endGameState = false;
+	snake.getBody()->clear();
+	snake.setBody(&gameWorld);
+	snake.setDirection(UP);
+	snake.setDesiredDirection(UP);
+	snake.setSpeed(5);
+	pickupGathering.clear();
+	menuIsOpen = false;
 }
 
 void QuitGame() {
@@ -106,19 +120,19 @@ bool init() {
 bool loadMedia() {
 	bool success = true;
 
-	//// load music
-	//music = Mix_LoadMUS("ukulele.mp3");
-	//if (music == NULL) {
-	//	printf("Failed to load music! SDL_mixer Error: %s\n", Mix_GetError());
-	//	//success = false;
-	//}
+	// load music
+	music = Mix_LoadMUS("Apoxode_-_Oortian_Clouds_1.mp3");
+	if (music == NULL) {
+		printf("Failed to load music! SDL_mixer Error: %s\n", Mix_GetError());
+		//success = false;
+	}
 
-	//// load sound effects
-	//placeToken = Mix_LoadWAV("pop.wav");
-	//if (placeToken == NULL) {
-	//	printf("Failed to load place token sound effect! SDL_mixer Error: %s\n", Mix_GetError());
-	//	//success = false;
-	//}
+	// load sound effects
+	sound = Mix_LoadWAV("608645__theplax__crunch-5.wav");
+	if (sound == NULL) {
+		printf("Failed to load place token sound effect! SDL_mixer Error: %s\n", Mix_GetError());
+		//success = false;
+	}
 
 	DefaultFont = TTF_OpenFont("consola.ttf", 36);
 	if (DefaultFont == NULL) {
@@ -132,10 +146,10 @@ bool loadMedia() {
 void close() {
 	Mix_HaltMusic();
 
-	//Mix_FreeChunk(placeToken);
-	//Mix_FreeMusic(music);
-	//placeToken = NULL;
-	//music = NULL;
+	Mix_FreeChunk(sound);
+	Mix_FreeMusic(music);
+	sound = NULL;
+	music = NULL;
 
 	TTF_CloseFont(DefaultFont);
 	DefaultFont = NULL;
@@ -161,6 +175,7 @@ void Render(SDL_Renderer* renderer) {
 	}
 	snake.render(renderer);
 	tb->render(renderer, 0, 0, NULL);
+	score->render(renderer, CURRENT_SCREEN_WIDTH - 250, 0);
 	if (menuIsOpen) {
 		menu->render(renderer);
 	}
@@ -170,11 +185,13 @@ void Render(SDL_Renderer* renderer) {
 }
 
 void Update(Uint32 deltaT) {
-	snake.move(deltaT, &gameWorld);
-	if (snake.checkCollisions()) {
-		endGameState = true;
+	if (!menuIsOpen) {
+		snake.move(deltaT, &gameWorld);
+		if (snake.checkCollisions()) {
+			endGameState = true;
+		}
+		gameWorld.generatePickups(deltaT);
 	}
-	gameWorld.generatePickups(deltaT);
 }
 
 int main(int argc, char* args[]) {
@@ -187,9 +204,9 @@ int main(int argc, char* args[]) {
 		}
 		else {
 
-			/*if (Mix_PlayingMusic() == 0) {
+			if (Mix_PlayingMusic() == 0) {
 				Mix_PlayMusic(music, -1);
-			}*/
+			}
 
 			bool pauseGame = false;
 
@@ -207,8 +224,11 @@ int main(int argc, char* args[]) {
 			totalMS = SDL_GetTicks();
 
 			std::stringstream ss;
+			std::stringstream scoreStr;
+			scoreStr.str("Score: 0");
 
 			winLoseText->loadFromRenderedText(renderer, "The game is over!", DefaultFont, { 255,255,255 });
+			score->loadFromRenderedText(renderer, scoreStr.str().c_str(), DefaultFont, {255,255,255});
 
 			menu = new Menu(CURRENT_SCREEN_WIDTH / 2 - 250, CURRENT_SCREEN_HEIGHT / 2 - 250, 500, 500, "");
 			menu->setTextDimensions(0.7f, 0.12f);
@@ -218,7 +238,7 @@ int main(int argc, char* args[]) {
 			menuPos.x += 200;
 			menuPos.y += 200;
 			Button* button = new Button("Retry", menuPos, 100, 50);
-			button->setBehavior(makeIncrease);
+			button->setBehavior(restartGame);
 			menu->addButton(*button);
 
 			menuPos.x += 8;
@@ -306,6 +326,10 @@ int main(int argc, char* args[]) {
 				timeSinceLastFrame.start();
 
 				float framerate = 1000.0f / deltaT;
+
+				scoreStr.str("");
+				scoreStr << "Score: " << gameScore;
+				score->loadFromRenderedText(renderer, scoreStr.str().c_str(), DefaultFont, { 255,255,255 });
 
 				if (!endGameState && !pauseGame) {
 					Update(deltaT);

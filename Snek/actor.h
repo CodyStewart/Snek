@@ -3,6 +3,7 @@
 #define ACTOR_H
 
 #include <vector>
+#include <SDL_mixer.h>
 
 #include "snek.h"
 #include "GameWorld.h"
@@ -10,7 +11,8 @@
 
 extern GameWorld gameWorld;
 extern std::vector<PickUp*> pickupGathering;
-
+extern uint gameScore;
+extern Mix_Chunk* sound;
 
 enum Direction {
 	UP,

@@ -1,6 +1,18 @@
 #include "GameWorld.h"
 #include "actor.h"
 
+Uint32 getPickupGenerationTime() {
+	Uint32 initialPickupGenerationTime = 5000;
+	Uint32 generationTimeCoeff = gameScore / 3;
+	
+	if (generationTimeCoeff * 500 >= initialPickupGenerationTime || initialPickupGenerationTime - generationTimeCoeff * 500 < 2000)
+		initialPickupGenerationTime = 2000;
+	else 
+		initialPickupGenerationTime -= generationTimeCoeff * 500;
+
+	return initialPickupGenerationTime;
+}
+
 Cell::Cell() {
 	cellTexture = nullptr;
 	cellColor = { 255,255,255 };
@@ -79,7 +91,7 @@ void GameWorld::generatePickups(Uint32 delta) {
 	static Uint32 accumulatedTime = 0;
 	accumulatedTime += delta;
 
-	if (accumulatedTime >= 5000) {
+	if (accumulatedTime >= getPickupGenerationTime()) {
 		accumulatedTime = 0;
 
 		srand(SDL_GetTicks());

@@ -9,6 +9,7 @@
 
 extern int CURRENT_SCREEN_WIDTH;
 extern int UNIT_DISTANCE;
+extern uint gameScore;
 
 extern const int paddingY;
 
