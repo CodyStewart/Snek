@@ -9,6 +9,8 @@
 #include "texture.h"
 
 extern GameWorld gameWorld;
+extern std::vector<PickUp*> pickupGathering;
+
 
 enum Direction {
 	UP,
@@ -34,6 +36,7 @@ struct Snake {
 	void setSpeed(uint sp);
 	void setDirection(Direction dir);
 	void setDesiredDirection(Direction dir);
+	void increaseSpeed(uint inc);
 
 	std::vector<Cell>* getBody();
 	SDL_Point getHeadPosition();
@@ -61,7 +64,7 @@ struct PickUp {
 	virtual void handle(Snake snek);
 	virtual void render(SDL_Renderer* renderer);
 
-	//virtual Cell getCell();
+	virtual Cell getCell();
 
 protected:
 	Cell puCell;
@@ -74,7 +77,7 @@ struct SizeUp : public PickUp {
 
 	void handle(Snake snek) override;
 	void render(SDL_Renderer* renderer) override;
-	//Cell getCell() override;
+	Cell getCell() override;
 };
 
 #endif // !ACTOR_H

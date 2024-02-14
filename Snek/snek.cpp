@@ -12,6 +12,7 @@
 #include "texture.h"
 #include "timer.h"
 #include "actor.h"
+#include "menu.h"
 
 bool init();
 
@@ -36,6 +37,7 @@ uint UNIT_DISTANCE = (DEFAULT_SCREEN_HEIGHT - paddingY) / NUMOFCOLS;
 bool windowResized = false;
 bool runGame = true;
 bool endGameState = false;
+bool menuIsOpen = false;
 
 GameWorld gameWorld = GameWorld(UNIT_DISTANCE, NUMOFROWS, NUMOFCOLS);
 Snake snake = Snake(&gameWorld);
@@ -45,6 +47,15 @@ TTF_Font* DefaultFont = NULL;
 
 TextTexture* tb = new TextTexture();
 TextTexture* winLoseText = new TextTexture();
+Menu* menu;
+
+void makeIncrease() {
+	snake.increaseSize();
+}
+
+void QuitGame() {
+	runGame = false;
+}
 
 bool init() {
 	bool success = true;
@@ -150,12 +161,13 @@ void Render(SDL_Renderer* renderer) {
 	}
 	snake.render(renderer);
 	tb->render(renderer, 0, 0, NULL);
+	if (menuIsOpen) {
+		menu->render(renderer);
+	}
 	if (endGameState)
 		winLoseText->render(renderer, CURRENT_SCREEN_WIDTH / 2, CURRENT_SCREEN_HEIGHT / 2);
 	SDL_RenderPresent(renderer);
 }
-
-
 
 void Update(Uint32 deltaT) {
 	snake.move(deltaT, &gameWorld);
@@ -179,6 +191,8 @@ int main(int argc, char* args[]) {
 				Mix_PlayMusic(music, -1);
 			}*/
 
+			bool pauseGame = false;
+
 			SDL_Event e;
 
 			Uint32 startTime = SDL_GetTicks();
@@ -196,18 +210,41 @@ int main(int argc, char* args[]) {
 
 			winLoseText->loadFromRenderedText(renderer, "The game is over!", DefaultFont, { 255,255,255 });
 
+			menu = new Menu(CURRENT_SCREEN_WIDTH / 2 - 250, CURRENT_SCREEN_HEIGHT / 2 - 250, 500, 500, "");
+			menu->setTextDimensions(0.7f, 0.12f);
+			menu->setTextPosition(0.15f, 0.1f);
+
+			SDL_Point menuPos = menu->getPos();
+			menuPos.x += 200;
+			menuPos.y += 200;
+			Button* button = new Button("Retry", menuPos, 100, 50);
+			button->setBehavior(makeIncrease);
+			menu->addButton(*button);
+
+			menuPos.x += 8;
+			menuPos.y += 100;
+			button = new Button("Quit", menuPos, 80, 50);
+			button->setBehavior(QuitGame);
+			menu->addButton(*button);
+
 			while (runGame) {
 				while (SDL_PollEvent(&e) != 0) {
 					if (e.type == SDL_QUIT) {
 						runGame = false;
 					}
-					else if (e.type == SDL_KEYDOWN)
-					{
-						switch (e.key.keysym.sym) {
-						case SDLK_ESCAPE:
-							runGame = false;
-							break;
+					else if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE) {
+						menuIsOpen = !menuIsOpen;
+						break;
+					}
+					else if (menuIsOpen) {
+						if (e.type == SDL_MOUSEMOTION) 
+							menu->handleEvent(&e);
+						else if (e.type == SDL_MOUSEBUTTONDOWN) 
+							menu->handleEvent(&e);
 
+					}
+					else if (e.type == SDL_KEYDOWN && !menuIsOpen) {
+						switch (e.key.keysym.sym) {
 						case SDLK_LEFT:
 						case SDLK_a:
 							if (snake.getDirection() != RIGHT) {
@@ -236,10 +273,11 @@ int main(int argc, char* args[]) {
 							}
 							break;
 
+						case SDLK_p:
+							pauseGame = !pauseGame;
 						default:
 							break;
 						}
-
 					}
 
 					window->handleEvent(e, renderer);
@@ -269,7 +307,7 @@ int main(int argc, char* args[]) {
 
 				float framerate = 1000.0f / deltaT;
 
-				if (!endGameState) {
+				if (!endGameState && !pauseGame) {
 					Update(deltaT);
 				}
 

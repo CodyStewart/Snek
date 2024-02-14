@@ -1,21 +1,46 @@
 #include "actor.h"
 
+bool wallCollision = false;
+
 bool checkBodyCollisions(Snake snake) {
 	std::vector<Cell>* snakeBody = snake.getBody();
-	for (int firstCellCompared = 0; firstCellCompared < snakeBody->size() - 1; firstCellCompared++) {
-		for (int secondCellCompared = firstCellCompared + 1; secondCellCompared < snakeBody->size() - 1; secondCellCompared++) {
-			if ((*snakeBody)[firstCellCompared].getRect()->x == (*snakeBody)[secondCellCompared].getRect()->x && (*snakeBody)[firstCellCompared].getRect()->y == (*snakeBody)[secondCellCompared].getRect()->y)
-				return true;
-		}
+	Cell snakeHead = (*snakeBody)[0];
+	for (int secondCellCompared = 1; secondCellCompared < snakeBody->size(); secondCellCompared++) {
+		if (snakeHead.getRect()->x == (*snakeBody)[secondCellCompared].getRect()->x && snakeHead.getRect()->y == (*snakeBody)[secondCellCompared].getRect()->y)
+			return true;
 	}
 
 	return false;
 }
 
-void checkPickUpCollisions(Snake snake) {
+bool checkWallCollisions() {
+	if (wallCollision) {
+		wallCollision = false;
+		return true;
+	}
 
+	return false;
 }
 
+// check if the snake head is touching a pickup
+void checkPickUpCollisions(Snake* snake) {
+	std::vector<Cell>* snakeBody = snake->getBody();
+	Cell snakeHead = (*snakeBody)[0];
+	SDL_Rect* snakeHeadRect = snakeHead.getRect();
+
+	for (std::vector<PickUp*>::iterator iter = pickupGathering.begin(); iter != pickupGathering.end(); iter++) {
+		Cell pickupCell = (**iter).getCell();
+		/*PickUp* pk = *iter;
+		Cell pickupCell = pk->getCell();*/
+		SDL_Rect* pickupRect = pickupCell.getRect();
+		if (snakeHeadRect->x == pickupRect->x && snakeHeadRect->y == pickupRect->y) {
+			snake->increaseSize();
+			snake->increaseSpeed(1);
+			pickupGathering.erase(iter);
+			break;
+		}
+	}
+}
 
 Snake::Snake(GameWorld* world) {
 	setBody(world);
@@ -38,19 +63,12 @@ void Snake::move(Uint32 deltaT, GameWorld* gameWorld) {
 	if (accumulatedTime >= timeToMove) {
 		accumulatedTime = 0;
 		moveByOne(gameWorld);
-		increaseSize();
 	}
 }
 
 void Snake::moveByOne(GameWorld* gameWorld) {
 	// move the snake one space based on direction
 	Cell tempBodyCell;
-
-	//// unset the cell uncovered by moving the tail
-	//Cell tailCell = body[body.size() - 1];
-	//GridPosition gp = gameWorld->convertCoordsToRowCol(tailCell.getRect()->x, tailCell.getRect()->y);
-	//Cell* gridCellUncovered = gameWorld->getCell(gp.row, gp.column);
-	//gridCellUncovered->setOccupied(false);
 
 	switch (desiredDirection)
 	{
@@ -78,6 +96,9 @@ void Snake::moveByOne(GameWorld* gameWorld) {
 
 				direction = UP;
 			}
+			else {
+				wallCollision = true;
+			}
 			break;
 		case DOWN:
 			if (gridPosition.row < NUMOFROWS - 1) {
@@ -102,6 +123,9 @@ void Snake::moveByOne(GameWorld* gameWorld) {
 				gridPosition.row += 1;
 
 				direction = DOWN;
+			}
+			else {
+				wallCollision = true;
 			}
 			break;
 		case LEFT:
@@ -128,6 +152,9 @@ void Snake::moveByOne(GameWorld* gameWorld) {
 
 				direction = LEFT;
 			}
+			else {
+				wallCollision = true;
+			}
 			break;
 		case RIGHT:
 			if (gridPosition.column < NUMOFCOLS - 1) {
@@ -152,6 +179,9 @@ void Snake::moveByOne(GameWorld* gameWorld) {
 				gridPosition.column += 1;
 				direction = RIGHT;
 			}
+			else {
+				wallCollision = true;
+			}
 			break;
 		default:
 			break;
@@ -169,7 +199,12 @@ bool Snake::checkCollisions() {
 		printf("Body has collided with itself!\n");
 		return true;
 	}
-	//checkPickUpCollisions();
+	else if (checkWallCollisions()) {
+		printf("Body has collided with a wall!\n");
+		return true;
+	}
+	
+	checkPickUpCollisions(this);
 
 	return false;
 }
@@ -281,6 +316,10 @@ void Snake::setDesiredDirection(Direction dir) {
 	desiredDirection = dir;
 }
 
+void Snake::increaseSpeed(uint inc) {
+	speed += inc;
+}
+
 std::vector<Cell>* Snake::getBody() { return &body; }
 
 SDL_Point Snake::getHeadPosition() {
@@ -316,9 +355,9 @@ void PickUp::handle(Snake snek) {
 
 }
 
-//Cell PickUp::getCell() {
-//
-//}
+Cell PickUp::getCell() {
+	return puCell;
+}
 
 SizeUp::SizeUp() {
 	puPosition = { 0,0 };
@@ -346,6 +385,6 @@ void SizeUp::render(SDL_Renderer* renderer) {
 	SDL_RenderFillRect(renderer, puCell.getRect());
 }
 
-//Cell SizeUp::getCell() {
-//	return puCell;
-//}
+Cell SizeUp::getCell() {
+	return puCell;
+}
