@@ -6,6 +6,7 @@
 
 #include "snek.h"
 #include "texture.h"
+#include "timer.h"
 
 extern int CURRENT_SCREEN_WIDTH;
 extern int UNIT_DISTANCE;
@@ -61,9 +62,12 @@ struct GameWorld {
 
 	Cell* getGrid();
 	Cell* getCell(int row, int col);
+	Uint32 getTimeSinceStartOfProgram();
 
 private:
 	Cell grid[25][25];
+
+	Timer timeSinceStartOfProgram;
 
 	int unitDistance;
 	int numOfRows;

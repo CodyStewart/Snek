@@ -41,7 +41,9 @@ bool menuIsOpen = false;
 uint gameScore = 0;
 
 GameWorld gameWorld = GameWorld(UNIT_DISTANCE, NUMOFROWS, NUMOFCOLS);
-Snake snake = Snake(&gameWorld);
+Snake snake = Snake(&gameWorld, player1, "Player 1");
+Snake rival = Snake(&gameWorld, player2, "Player 2");
+
 std::vector<PickUp*> pickupGathering;
 
 TTF_Font* DefaultFont = NULL;
@@ -53,16 +55,26 @@ TextTexture* score = new TextTexture();
 Menu* menu;
 
 Mix_Music* music;
-Mix_Chunk* sound;
+Mix_Chunk* player1Sound;
+Mix_Chunk* player2Sound;
+
 
 void restartGame() {
 	gameScore = 0;
 	endGameState = false;
+
 	snake.getBody()->clear();
 	snake.setBody(&gameWorld);
 	snake.setDirection(UP);
 	snake.setDesiredDirection(UP);
 	snake.setSpeed(5);
+
+	rival.getBody()->clear();
+	rival.setBody(&gameWorld, player2);
+	rival.setDirection(LEFT);
+	rival.setDesiredDirection(LEFT);
+	rival.setSpeed(5);
+
 	pickupGathering.clear();
 	menuIsOpen = false;
 }
@@ -128,9 +140,14 @@ bool loadMedia() {
 	}
 
 	// load sound effects
-	sound = Mix_LoadWAV("608645__theplax__crunch-5.wav");
-	if (sound == NULL) {
-		printf("Failed to load place token sound effect! SDL_mixer Error: %s\n", Mix_GetError());
+	player1Sound = Mix_LoadWAV("608645__theplax__crunch-5.wav");
+	if (player1Sound == NULL) {
+		printf("Failed to load player 1's sound effect! SDL_mixer Error: %s\n", Mix_GetError());
+		//success = false;
+	}
+	player2Sound = Mix_LoadWAV("rivalCrunch.wav");
+	if (player2Sound == NULL) {
+		printf("Failed to load player 2's sound effect! SDL_mixer Error: %s\n", Mix_GetError());
 		//success = false;
 	}
 
@@ -146,9 +163,11 @@ bool loadMedia() {
 void close() {
 	Mix_HaltMusic();
 
-	Mix_FreeChunk(sound);
+	Mix_FreeChunk(player1Sound);
+	Mix_FreeChunk(player2Sound);
 	Mix_FreeMusic(music);
-	sound = NULL;
+	player1Sound = NULL;
+	player2Sound = NULL;
 	music = NULL;
 
 	TTF_CloseFont(DefaultFont);
@@ -173,23 +192,63 @@ void Render(SDL_Renderer* renderer) {
 	for (int i = 0; i < pickupGathering.size(); i++) {
 		pickupGathering[i]->render(renderer);
 	}
+	rival.render(renderer);
 	snake.render(renderer);
 	tb->render(renderer, 0, 0, NULL);
 	score->render(renderer, CURRENT_SCREEN_WIDTH - 250, 0);
+	if (endGameState)
+		winLoseText->render(renderer, CURRENT_SCREEN_WIDTH / 2, CURRENT_SCREEN_HEIGHT / 2);
 	if (menuIsOpen) {
 		menu->render(renderer);
 	}
-	if (endGameState)
-		winLoseText->render(renderer, CURRENT_SCREEN_WIDTH / 2, CURRENT_SCREEN_HEIGHT / 2);
 	SDL_RenderPresent(renderer);
 }
 
 void Update(Uint32 deltaT) {
+	static Uint32 accumulatedTimeForPlayer1 = 0;
+	static Uint32 accumulatedTimeForPlayer2 = 0;
+
 	if (!menuIsOpen) {
-		snake.move(deltaT, &gameWorld);
-		if (snake.checkCollisions()) {
+		accumulatedTimeForPlayer1 += deltaT;
+		accumulatedTimeForPlayer2 += deltaT;
+		snake.move(accumulatedTimeForPlayer1, &gameWorld);
+		rival.move(accumulatedTimeForPlayer2, &gameWorld);
+
+		CollisionType player1CollisionType = NONE;
+		player1CollisionType = snake.checkCollisions(&rival);
+		CollisionType player2CollisionType = NONE;
+		player2CollisionType = rival.checkCollisions(&snake);
+
+		if (player1CollisionType == OTHER && player2CollisionType == OTHER) {	// check to see if both players ran into each other
+			printf("Players ran into each! It's a draw!\n");
 			endGameState = true;
 		}
+		else if (player1CollisionType == OTHER) {
+			printf("%s ran into %s!\n", snake.getName().c_str(), rival.getName().c_str());
+			endGameState = true;
+		}
+		else if (player2CollisionType == OTHER) {
+			printf("%s ran into %s!\n", rival.getName().c_str(), snake.getName().c_str());
+			endGameState = true;
+		}
+
+		if (player1CollisionType == SELF) {
+			printf("%s ran into themselves!\n", snake.getName().c_str());
+			endGameState = true;
+		}
+		if (player2CollisionType == SELF) {
+			printf("%s ran into themselves!\n", rival.getName().c_str());
+			endGameState = true;
+		}
+		if (player1CollisionType == WALL) {
+			printf("%s ran into a wall!\n", snake.getName().c_str());
+			endGameState = true;
+		}
+		if (player2CollisionType == WALL) {
+			printf("%s ran into a wall!\n", rival.getName().c_str());
+			endGameState = true;
+		}
+
 		gameWorld.generatePickups(deltaT);
 	}
 }
@@ -204,9 +263,9 @@ int main(int argc, char* args[]) {
 		}
 		else {
 
-			if (Mix_PlayingMusic() == 0) {
-				Mix_PlayMusic(music, -1);
-			}
+			//if (Mix_PlayingMusic() == 0) {
+			//	Mix_PlayMusic(music, -1);
+			//}
 
 			bool pauseGame = false;
 
@@ -265,31 +324,51 @@ int main(int argc, char* args[]) {
 					}
 					else if (e.type == SDL_KEYDOWN && !menuIsOpen) {
 						switch (e.key.keysym.sym) {
-						case SDLK_LEFT:
 						case SDLK_a:
 							if (snake.getDirection() != RIGHT) {
 								snake.setDesiredDirection(LEFT);
 							}
 							break;
 						
-						case SDLK_RIGHT:
 						case SDLK_d:
 							if (snake.getDirection() != LEFT) {
 								snake.setDesiredDirection(RIGHT);
 							}
 							break;
 						
-						case SDLK_UP:
 						case SDLK_w:
 							if (snake.getDirection() != DOWN) {
 								snake.setDesiredDirection(UP);
 							}
 							break;
 
-						case SDLK_DOWN:
 						case SDLK_s:
 							if (snake.getDirection() != UP) {
 								snake.setDesiredDirection(DOWN);
+							}
+							break;
+						
+						case SDLK_LEFT:
+							if (rival.getDirection() != RIGHT) {
+								rival.setDesiredDirection(LEFT);
+							}
+							break;
+						
+						case SDLK_RIGHT:
+							if (rival.getDirection() != LEFT) {
+								rival.setDesiredDirection(RIGHT);
+							}
+							break;
+
+						case SDLK_UP:
+							if (rival.getDirection() != DOWN) {
+								rival.setDesiredDirection(UP);
+							}
+							break;
+
+						case SDLK_DOWN:
+							if (rival.getDirection() != UP) {
+								rival.setDesiredDirection(DOWN);
 							}
 							break;
 

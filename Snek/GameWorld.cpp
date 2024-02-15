@@ -1,16 +1,17 @@
 #include "GameWorld.h"
 #include "actor.h"
 
-Uint32 getPickupGenerationTime() {
-	Uint32 initialPickupGenerationTime = 5000;
-	Uint32 generationTimeCoeff = gameScore / 3;
-	
-	if (generationTimeCoeff * 500 >= initialPickupGenerationTime || initialPickupGenerationTime - generationTimeCoeff * 500 < 2000)
-		initialPickupGenerationTime = 2000;
-	else 
-		initialPickupGenerationTime -= generationTimeCoeff * 500;
+Uint32 getPickupGenerationTime(GameWorld* world) {
+	Uint32 generationTime = 0;
 
-	return initialPickupGenerationTime;
+	if (world->getTimeSinceStartOfProgram() < 10000)
+		return 5000;
+	else if (world->getTimeSinceStartOfProgram() < 25000)
+		return 4000;
+	else if (world->getTimeSinceStartOfProgram() < 40000)
+		return 3000;
+	else
+		return 2000;
 }
 
 Cell::Cell() {
@@ -61,8 +62,7 @@ GameWorld::GameWorld(int unitDist, const int numRows, const int numCols) {
 	numOfRows = numRows;
 	numOfCols = numCols;
 
-	//grid = new Cell [numRows * numCols];
-	//grid = &gridPtr;
+	timeSinceStartOfProgram.start();
 
 	int XOffset = (CURRENT_SCREEN_WIDTH / 2) - (numOfCols * unitDistance) / 2;
 
@@ -71,8 +71,6 @@ GameWorld::GameWorld(int unitDist, const int numRows, const int numCols) {
 		for (int col = 0; col < numOfCols; col++) {
 			grid[row][col].setPosition(col * unitDistance + XOffset, row * unitDistance + paddingY);
 			grid[row][col].setDimensions(unitDistance);
-			/*grid[numOfRows * row + col].setPosition(col * unitDistance + XOffset, row * unitDistance);
-			grid[numOfRows * row + col].setDimensions(unitDistance);*/
 		}
 	}
 }
@@ -81,7 +79,6 @@ void GameWorld::render(SDL_Renderer* renderer) {
 	for (int row = 0; row < numOfRows; row++) {
 		for (int col = 0; col < numOfCols; col++) {
 			// render each cell
-			//grid[numOfRows * row + col].render(renderer);
 			grid[row][col].render(renderer);
 		}
 	}
@@ -91,7 +88,7 @@ void GameWorld::generatePickups(Uint32 delta) {
 	static Uint32 accumulatedTime = 0;
 	accumulatedTime += delta;
 
-	if (accumulatedTime >= getPickupGenerationTime()) {
+	if (accumulatedTime >= getPickupGenerationTime(this)) {
 		accumulatedTime = 0;
 
 		srand(SDL_GetTicks());
@@ -136,6 +133,8 @@ void GameWorld::resizeGameWorld(int newSize) {
 
 GridPosition GameWorld::convertCoordsToRowCol(int x, int y) {
 	GridPosition gp;
+	gp.column = 0;
+	gp.row = 0;
 
 	// get the column and row number based on the coords provided
 	int colNum = (x - grid[0][0].getRect()->x) / unitDistance; // we use the first cell in the grid to find our x and y screen padding
@@ -155,3 +154,5 @@ Cell* GameWorld::getCell(int row, int col) {
 	// return cell at row, column
 	return &grid[row][col];
 }
+
+Uint32 GameWorld::getTimeSinceStartOfProgram() { return timeSinceStartOfProgram.getTicks(); }
