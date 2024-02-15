@@ -54,7 +54,7 @@ struct GameWorld {
 
 	void render(SDL_Renderer* renderer);
 
-	void generatePickups(Uint32 delta);
+	Uint32 generatePickups(Uint32 delta);
 
 	void resizeGameWorld(int newSize);
 

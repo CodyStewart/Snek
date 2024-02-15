@@ -38,6 +38,7 @@ bool windowResized = false;
 bool runGame = true;
 bool endGameState = false;
 bool menuIsOpen = false;
+bool twoPlayerMode = false;
 uint gameScore = 0;
 
 GameWorld gameWorld = GameWorld(UNIT_DISTANCE, NUMOFROWS, NUMOFCOLS);
@@ -51,6 +52,9 @@ TTF_Font* DefaultFont = NULL;
 TextTexture* tb = new TextTexture();
 TextTexture* winLoseText = new TextTexture();
 TextTexture* score = new TextTexture();
+TextTexture* player1SpeedText = new TextTexture();
+TextTexture* player2SpeedText = new TextTexture();
+TextTexture* pickupGenerationSpeedText = new TextTexture();
 
 Menu* menu;
 
@@ -69,11 +73,13 @@ void restartGame() {
 	snake.setDesiredDirection(UP);
 	snake.setSpeed(5);
 
-	rival.getBody()->clear();
-	rival.setBody(&gameWorld, player2);
-	rival.setDirection(LEFT);
-	rival.setDesiredDirection(LEFT);
-	rival.setSpeed(5);
+	if (twoPlayerMode) {
+		rival.getBody()->clear();
+		rival.setBody(&gameWorld, player2);
+		rival.setDirection(LEFT);
+		rival.setDesiredDirection(LEFT);
+		rival.setSpeed(5);
+	}
 
 	pickupGathering.clear();
 	menuIsOpen = false;
@@ -192,10 +198,15 @@ void Render(SDL_Renderer* renderer) {
 	for (int i = 0; i < pickupGathering.size(); i++) {
 		pickupGathering[i]->render(renderer);
 	}
-	rival.render(renderer);
+	if (twoPlayerMode)
+		rival.render(renderer);
 	snake.render(renderer);
 	tb->render(renderer, 0, 0, NULL);
 	score->render(renderer, CURRENT_SCREEN_WIDTH - 250, 0);
+	player1SpeedText->render(renderer, 0, 0);
+	if (twoPlayerMode)
+		player2SpeedText->render(renderer, 0, 40);
+	pickupGenerationSpeedText->render(renderer, 0, 80);
 	if (endGameState)
 		winLoseText->render(renderer, CURRENT_SCREEN_WIDTH / 2, CURRENT_SCREEN_HEIGHT / 2);
 	if (menuIsOpen) {
@@ -212,44 +223,51 @@ void Update(Uint32 deltaT) {
 		accumulatedTimeForPlayer1 += deltaT;
 		accumulatedTimeForPlayer2 += deltaT;
 		snake.move(accumulatedTimeForPlayer1, &gameWorld);
-		rival.move(accumulatedTimeForPlayer2, &gameWorld);
+		if (twoPlayerMode)
+			rival.move(accumulatedTimeForPlayer2, &gameWorld);
 
 		CollisionType player1CollisionType = NONE;
 		player1CollisionType = snake.checkCollisions(&rival);
-		CollisionType player2CollisionType = NONE;
-		player2CollisionType = rival.checkCollisions(&snake);
+		if (twoPlayerMode) {
+			CollisionType player2CollisionType = NONE;
+			player2CollisionType = rival.checkCollisions(&snake);
 
-		if (player1CollisionType == OTHER && player2CollisionType == OTHER) {	// check to see if both players ran into each other
-			printf("Players ran into each! It's a draw!\n");
-			endGameState = true;
-		}
-		else if (player1CollisionType == OTHER) {
-			printf("%s ran into %s!\n", snake.getName().c_str(), rival.getName().c_str());
-			endGameState = true;
-		}
-		else if (player2CollisionType == OTHER) {
-			printf("%s ran into %s!\n", rival.getName().c_str(), snake.getName().c_str());
-			endGameState = true;
+			if (player1CollisionType == OTHER && player2CollisionType == OTHER) {	// check to see if both players ran into each other
+				printf("Players ran into each! It's a draw!\n");
+				endGameState = true;
+			}
+			else if (player1CollisionType == OTHER) {
+				printf("%s ran into %s!\n", snake.getName().c_str(), rival.getName().c_str());
+				endGameState = true;
+			}
+			else if (player2CollisionType == OTHER) {
+				printf("%s ran into %s!\n", rival.getName().c_str(), snake.getName().c_str());
+				endGameState = true;
+			}
+			if (player2CollisionType == SELF) {
+				printf("%s ran into themselves!\n", rival.getName().c_str());
+				endGameState = true;
+			}
+			if (player2CollisionType == WALL) {
+				printf("%s ran into a wall!\n", rival.getName().c_str());
+				endGameState = true;
+			}
 		}
 
 		if (player1CollisionType == SELF) {
 			printf("%s ran into themselves!\n", snake.getName().c_str());
 			endGameState = true;
 		}
-		if (player2CollisionType == SELF) {
-			printf("%s ran into themselves!\n", rival.getName().c_str());
-			endGameState = true;
-		}
 		if (player1CollisionType == WALL) {
 			printf("%s ran into a wall!\n", snake.getName().c_str());
 			endGameState = true;
 		}
-		if (player2CollisionType == WALL) {
-			printf("%s ran into a wall!\n", rival.getName().c_str());
-			endGameState = true;
-		}
 
-		gameWorld.generatePickups(deltaT);
+		Uint32 genSpeed = gameWorld.generatePickups(deltaT);
+		std::stringstream generationSpeedStr;
+		generationSpeedStr.str("");
+		generationSpeedStr << "Gen. Speed: " << genSpeed;
+		pickupGenerationSpeedText->loadFromRenderedText(renderer, generationSpeedStr.str().c_str(), DefaultFont, { 255,255,255 });
 	}
 }
 
@@ -282,8 +300,10 @@ int main(int argc, char* args[]) {
 			int countedFrames = 0;
 			totalMS = SDL_GetTicks();
 
-			std::stringstream ss;
+			std::stringstream player1SpeedStr;
+			std::stringstream player2SpeedStr;
 			std::stringstream scoreStr;
+
 			scoreStr.str("Score: 0");
 
 			winLoseText->loadFromRenderedText(renderer, "The game is over!", DefaultFont, { 255,255,255 });
@@ -296,7 +316,7 @@ int main(int argc, char* args[]) {
 			SDL_Point menuPos = menu->getPos();
 			menuPos.x += 200;
 			menuPos.y += 200;
-			Button* button = new Button("Retry", menuPos, 100, 50);
+			Button* button = new Button("Restart", menuPos, 100, 50);
 			button->setBehavior(restartGame);
 			menu->addButton(*button);
 
@@ -348,29 +368,31 @@ int main(int argc, char* args[]) {
 							}
 							break;
 						
-						case SDLK_LEFT:
-							if (rival.getDirection() != RIGHT) {
-								rival.setDesiredDirection(LEFT);
-							}
-							break;
-						
-						case SDLK_RIGHT:
-							if (rival.getDirection() != LEFT) {
-								rival.setDesiredDirection(RIGHT);
-							}
-							break;
+							if (twoPlayerMode) {
+								case SDLK_LEFT:
+									if (rival.getDirection() != RIGHT) {
+										rival.setDesiredDirection(LEFT);
+									}
+									break;
 
-						case SDLK_UP:
-							if (rival.getDirection() != DOWN) {
-								rival.setDesiredDirection(UP);
-							}
-							break;
+								case SDLK_RIGHT:
+									if (rival.getDirection() != LEFT) {
+										rival.setDesiredDirection(RIGHT);
+									}
+									break;
 
-						case SDLK_DOWN:
-							if (rival.getDirection() != UP) {
-								rival.setDesiredDirection(DOWN);
+								case SDLK_UP:
+									if (rival.getDirection() != DOWN) {
+										rival.setDesiredDirection(UP);
+									}
+									break;
+
+								case SDLK_DOWN:
+									if (rival.getDirection() != UP) {
+										rival.setDesiredDirection(DOWN);
+									}
+									break;
 							}
-							break;
 
 						case SDLK_p:
 							pauseGame = !pauseGame;
@@ -392,19 +414,31 @@ int main(int argc, char* args[]) {
 					}
 				}
 
-				ss.str("");
-				totalMS = SDL_GetTicks();
-				float avgFPS = countedFrames / (totalMS / 1000.0f);
-				avgFPS = floor(avgFPS);
-				if (avgFPS > 20000)
-					avgFPS = 0;
+				player1SpeedStr.str("");
+				uint player1Speed = snake.getSpeed();
+				player1SpeedStr << "Player 1 Speed: " << player1Speed;
+				player1SpeedText->loadFromRenderedText(renderer, player1SpeedStr.str().c_str(), DefaultFont, { 255,255,255 });
 
+				if (twoPlayerMode) {
+					player2SpeedStr.str("");
+					uint player2Speed = rival.getSpeed();
+					player2SpeedStr << "Player 2 Speed: " << player2Speed;
+					player2SpeedText->loadFromRenderedText(renderer, player2SpeedStr.str().c_str(), DefaultFont, { 255,255,255 });
+				}
+
+				//totalMS = SDL_GetTicks();
+				//float avgFPS = countedFrames / (totalMS / 1000.0f);
+				//avgFPS = floor(avgFPS);
+				//if (avgFPS > 20000)
+				//	avgFPS = 0;
+
+				//ss << "avgFPS: " << avgFPS << "   deltaT: " << deltaT;
+				//tb->loadFromRenderedText(renderer, ss.str().c_str(), DefaultFont, {255,255,255});
+
+				//float framerate = 1000.0f / deltaT;
+				
 				deltaT = timeSinceLastFrame.getTicks();
-				ss << "avgFPS: " << avgFPS << "   deltaT: " << deltaT;
-				tb->loadFromRenderedText(renderer, ss.str().c_str(), DefaultFont, {255,255,255});
 				timeSinceLastFrame.start();
-
-				float framerate = 1000.0f / deltaT;
 
 				scoreStr.str("");
 				scoreStr << "Score: " << gameScore;

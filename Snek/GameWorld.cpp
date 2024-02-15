@@ -84,7 +84,7 @@ void GameWorld::render(SDL_Renderer* renderer) {
 	}
 }
 
-void GameWorld::generatePickups(Uint32 delta) {
+Uint32 GameWorld::generatePickups(Uint32 delta) {
 	static Uint32 accumulatedTime = 0;
 	accumulatedTime += delta;
 
@@ -114,6 +114,8 @@ void GameWorld::generatePickups(Uint32 delta) {
 
 		pickupGathering.push_back(sizeup);
 	}
+	
+	return getPickupGenerationTime(this);
 }
 
 void GameWorld::resizeGameWorld(int newSize) {

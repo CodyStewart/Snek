@@ -74,8 +74,9 @@ Snake::Snake(GameWorld* world, playerNum playerNum, std::string snakeName) {
 		wallCollision = false;
 	}
 	else {
-		setBody(world, player2);
-		bodyColor = { 0,255,255 };
+		if (twoPlayerMode)
+			setBody(world, player2);
+		bodyColor = { 255,255,0 };
 		name = snakeName;
 		headTexture = nullptr;
 		headPosition = getHeadPosition();
@@ -85,7 +86,6 @@ Snake::Snake(GameWorld* world, playerNum playerNum, std::string snakeName) {
 		desiredDirection = LEFT;
 		wallCollision = false;
 	}
-
 }
 
 void Snake::move(Uint32 &accumulatedTime, GameWorld* gameWorld) {
@@ -233,7 +233,7 @@ CollisionType Snake::checkCollisions(Snake* snakeToCheckAgainst) {
 	else if (checkWallCollisions(this)) {
 		return WALL;
 	}
-	else if (checkRivalCollisions(this, snakeToCheckAgainst)) {
+	else if (twoPlayerMode && checkRivalCollisions(this, snakeToCheckAgainst)) {
 		return OTHER;
 	}
 	
@@ -423,6 +423,10 @@ std::string Snake::getName() {
 
 bool Snake::getWallCollision() {
 	return wallCollision;
+}
+
+uint Snake::getSpeed() {
+	return speed;
 }
 
 PickUp::PickUp() {

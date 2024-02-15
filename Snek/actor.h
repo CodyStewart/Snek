@@ -15,6 +15,8 @@ extern uint gameScore;
 extern Mix_Chunk* player1Sound;
 extern Mix_Chunk* player2Sound;
 
+extern bool twoPlayerMode;
+
 enum Direction {
 	UP,
 	DOWN,
@@ -49,6 +51,7 @@ struct Snake {
 	Direction getDirection();
 	std::string getName();
 	bool getWallCollision();
+	uint getSpeed();
 
 private:
 	// TODO: add an array of grid positions so that resizing the snake will be easier
