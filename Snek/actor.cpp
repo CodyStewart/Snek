@@ -2,55 +2,105 @@
 
 bool checkBodyCollisions(Snake snake) {
 	std::vector<Cell>* snakeBody = snake.getBody();
-	for (int firstCellCompared = 0; firstCellCompared < snakeBody->size() - 1; firstCellCompared++) {
-		for (int secondCellCompared = firstCellCompared + 1; secondCellCompared < snakeBody->size() - 1; secondCellCompared++) {
-			if ((*snakeBody)[firstCellCompared].getRect()->x == (*snakeBody)[secondCellCompared].getRect()->x && (*snakeBody)[firstCellCompared].getRect()->y == (*snakeBody)[secondCellCompared].getRect()->y)
-				return true;
-		}
+	Cell snakeHead = (*snakeBody)[0];
+	for (int secondCellCompared = 1; secondCellCompared < snakeBody->size(); secondCellCompared++) {
+		if (snakeHead.getRect()->x == (*snakeBody)[secondCellCompared].getRect()->x && snakeHead.getRect()->y == (*snakeBody)[secondCellCompared].getRect()->y)
+			return true;
 	}
 
 	return false;
 }
 
-void checkPickUpCollisions(Snake snake) {
+bool checkWallCollisions(Snake* snake) {
+	if (snake->getWallCollision()) {
+		snake->setWallCollision(false);
+		return true;
+	}
 
+	return false;
 }
 
+bool checkRivalCollisions(Snake* thisSnake, Snake* otherSnake) {
+	std::vector<Cell>* otherSnakeBody = otherSnake->getBody();
+	Cell thisSnakeHead = thisSnake->getBody()->front();
 
-Snake::Snake(GameWorld* world) {
-	setBody(world);
-	headTexture = nullptr;
-	bodyColor = { 0, 0, 255 };
+	for (int thisSnakeCell = 0; thisSnakeCell < otherSnakeBody->size(); thisSnakeCell++) {
+		if (thisSnakeHead.getRect()->x == (*otherSnakeBody)[thisSnakeCell].getRect()->x && thisSnakeHead.getRect()->y == (*otherSnakeBody)[thisSnakeCell].getRect()->y)
+			return true;
+	}
 
-	headPosition = getHeadPosition();
-	speed = 5;
-	bodyLength = (uint)body.size();
-	direction = UP;
-	desiredDirection = UP;
+	return false;
 }
 
-void Snake::move(Uint32 deltaT, GameWorld* gameWorld) {
+// check if the snake head is touching a pickup
+void checkPickUpCollisions(Snake* snake) {
+	std::vector<Cell>* snakeBody = snake->getBody();
+	Cell snakeHead = (*snakeBody)[0];
+	SDL_Rect* snakeHeadRect = snakeHead.getRect();
+
+	for (std::vector<PickUp*>::iterator iter = pickupGathering.begin(); iter != pickupGathering.end(); iter++) {
+		Cell pickupCell = (**iter).getCell();
+		SDL_Rect* pickupRect = pickupCell.getRect();
+		if (snakeHeadRect->x == pickupRect->x && snakeHeadRect->y == pickupRect->y) {
+			snake->increaseSize();
+			uint newSpeed = 10 + gameScore;
+			snake->setSpeed((uint)(newSpeed / 2));
+			pickupGathering.erase(iter);
+
+			if (snake->getName() == "Player 1")
+				Mix_PlayChannel(-1, player1Sound, 0);
+			else if (snake->getName() == "Player 2")
+				Mix_PlayChannel(-1, player2Sound, 0);
+			else
+				printf("Neither sound was played while collecting pickup. Have the player names been changed?");
+
+			gameScore++;
+			break;
+		}
+	}
+}
+
+Snake::Snake(GameWorld* world, playerNum playerNum, std::string snakeName) {
+	if (playerNum == player1) {
+		setBody(world);
+		bodyColor = { 0, 0, 255 };
+		name = snakeName;
+		headTexture = nullptr;
+		headPosition = getHeadPosition();
+		speed = 5;
+		bodyLength = (uint)body.size();
+		direction = UP;
+		desiredDirection = UP;
+		wallCollision = false;
+	}
+	else {
+		if (twoPlayerMode)
+			setBody(world, player2);
+		bodyColor = { 255,255,0 };
+		name = snakeName;
+		headTexture = nullptr;
+		headPosition = getHeadPosition();
+		speed = 5;
+		bodyLength = (uint)body.size();
+		direction = LEFT;
+		desiredDirection = LEFT;
+		wallCollision = false;
+	}
+}
+
+void Snake::move(Uint32 &accumulatedTime, GameWorld* gameWorld) {
 	// check if enough time has past for the snake to have moved
-	static Uint32 accumulatedTime = 0;
 	Uint32 timeToMove = 1000 / speed;
-	accumulatedTime += deltaT;
 
 	if (accumulatedTime >= timeToMove) {
 		accumulatedTime = 0;
 		moveByOne(gameWorld);
-		increaseSize();
 	}
 }
 
 void Snake::moveByOne(GameWorld* gameWorld) {
 	// move the snake one space based on direction
 	Cell tempBodyCell;
-
-	//// unset the cell uncovered by moving the tail
-	//Cell tailCell = body[body.size() - 1];
-	//GridPosition gp = gameWorld->convertCoordsToRowCol(tailCell.getRect()->x, tailCell.getRect()->y);
-	//Cell* gridCellUncovered = gameWorld->getCell(gp.row, gp.column);
-	//gridCellUncovered->setOccupied(false);
 
 	switch (desiredDirection)
 	{
@@ -78,6 +128,9 @@ void Snake::moveByOne(GameWorld* gameWorld) {
 
 				direction = UP;
 			}
+			else {
+				wallCollision = true;
+			}
 			break;
 		case DOWN:
 			if (gridPosition.row < NUMOFROWS - 1) {
@@ -102,6 +155,9 @@ void Snake::moveByOne(GameWorld* gameWorld) {
 				gridPosition.row += 1;
 
 				direction = DOWN;
+			}
+			else {
+				wallCollision = true;
 			}
 			break;
 		case LEFT:
@@ -128,6 +184,9 @@ void Snake::moveByOne(GameWorld* gameWorld) {
 
 				direction = LEFT;
 			}
+			else {
+				wallCollision = true;
+			}
 			break;
 		case RIGHT:
 			if (gridPosition.column < NUMOFCOLS - 1) {
@@ -152,6 +211,9 @@ void Snake::moveByOne(GameWorld* gameWorld) {
 				gridPosition.column += 1;
 				direction = RIGHT;
 			}
+			else {
+				wallCollision = true;
+			}
 			break;
 		default:
 			break;
@@ -164,14 +226,20 @@ void Snake::moveByOne(GameWorld* gameWorld) {
 	gridCellCovered->setOccupied(true);
 }
 
-bool Snake::checkCollisions() {
+CollisionType Snake::checkCollisions(Snake* snakeToCheckAgainst) {
 	if (checkBodyCollisions(*this)) {
-		printf("Body has collided with itself!\n");
-		return true;
+		return SELF;
 	}
-	//checkPickUpCollisions();
+	else if (checkWallCollisions(this)) {
+		return WALL;
+	}
+	else if (twoPlayerMode && checkRivalCollisions(this, snakeToCheckAgainst)) {
+		return OTHER;
+	}
+	
+	checkPickUpCollisions(this);
 
-	return false;
+	return NONE;
 }
 
 void Snake::increaseSize() {
@@ -238,10 +306,13 @@ void Snake::setSnakeColor(SDL_Color color) {
 }
 
 void Snake::setBody(GameWorld* world) {
-	Cell* CellPtr = world->getCell(12, 4);
+	int player1Row, player1Col;
+	player1Row = 20;
+	player1Col = 4;
+	Cell* CellPtr = world->getCell(player1Row, player1Col);
 	CellPtr->setOccupied(true);
-	gridPosition.row = 12;
-	gridPosition.column = 4;
+	gridPosition.row = player1Row;
+	gridPosition.column = player1Col;
 
 	SDL_Rect* elementRect = CellPtr->getRect();
 
@@ -253,7 +324,7 @@ void Snake::setBody(GameWorld* world) {
 	body.push_back(head);
 
 	Cell bodyCell = Cell();
-	CellPtr = world->getCell(13, 4);
+	CellPtr = world->getCell(21, 4);
 	CellPtr->setOccupied(true);
 	elementRect = CellPtr->getRect();
 	bodyCell.setPosition(elementRect->x, elementRect->y);
@@ -261,7 +332,42 @@ void Snake::setBody(GameWorld* world) {
 	bodyCell.setOccupied(true);
 	body.push_back(bodyCell);
 
-	CellPtr = world->getCell(14, 4);
+	CellPtr = world->getCell(22, 4);
+	CellPtr->setOccupied(true);
+	elementRect = CellPtr->getRect();
+	bodyCell.setPosition(elementRect->x, elementRect->y);
+	bodyCell.setDimensions(elementRect->w);
+	body.push_back(bodyCell);
+}
+
+void Snake::setBody(GameWorld* world, playerNum player2) {
+	int player2Row, player2Col;
+	player2Row = 4;
+	player2Col = 20;
+	Cell* CellPtr = world->getCell(player2Row, player2Col);
+	CellPtr->setOccupied(true);
+	gridPosition.row = player2Row;
+	gridPosition.column = player2Col;
+
+	SDL_Rect* elementRect = CellPtr->getRect();
+
+	head = Cell();
+	head.setColor({ 255,255,255 });
+	head.setPosition(elementRect->x, elementRect->y);
+	head.setDimensions(elementRect->w);
+	head.setOccupied(true);
+	body.push_back(head);
+
+	Cell bodyCell = Cell();
+	CellPtr = world->getCell(4, 21);
+	CellPtr->setOccupied(true);
+	elementRect = CellPtr->getRect();
+	bodyCell.setPosition(elementRect->x, elementRect->y);
+	bodyCell.setDimensions(elementRect->w);
+	//bodyCell.setOccupied(true);
+	body.push_back(bodyCell);
+
+	CellPtr = world->getCell(4, 22);
 	CellPtr->setOccupied(true);
 	elementRect = CellPtr->getRect();
 	bodyCell.setPosition(elementRect->x, elementRect->y);
@@ -279,6 +385,14 @@ void Snake::setDirection(Direction dir) {
 
 void Snake::setDesiredDirection(Direction dir) {
 	desiredDirection = dir;
+}
+
+void Snake::increaseSpeed(uint inc) {
+	speed += inc;
+}
+
+void Snake::setWallCollision(bool collidedWithWall) {
+	wallCollision = collidedWithWall;
 }
 
 std::vector<Cell>* Snake::getBody() { return &body; }
@@ -303,6 +417,18 @@ void Snake::setSnakePosition(SDL_Point pos)  {
 	headPosition.y = pos.y;
 }
 
+std::string Snake::getName() {
+	return name;
+}
+
+bool Snake::getWallCollision() {
+	return wallCollision;
+}
+
+uint Snake::getSpeed() {
+	return speed;
+}
+
 PickUp::PickUp() {
 	puPosition = { 0,0 };
 	Cell cell = Cell();
@@ -316,9 +442,9 @@ void PickUp::handle(Snake snek) {
 
 }
 
-//Cell PickUp::getCell() {
-//
-//}
+Cell PickUp::getCell() {
+	return puCell;
+}
 
 SizeUp::SizeUp() {
 	puPosition = { 0,0 };
@@ -346,6 +472,6 @@ void SizeUp::render(SDL_Renderer* renderer) {
 	SDL_RenderFillRect(renderer, puCell.getRect());
 }
 
-//Cell SizeUp::getCell() {
-//	return puCell;
-//}
+Cell SizeUp::getCell() {
+	return puCell;
+}

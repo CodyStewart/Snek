@@ -14,4 +14,16 @@ struct GridPosition {
 	uint column;
 };
 
+enum playerNum {
+	player1,
+	player2
+};
+
+enum CollisionType {
+	SELF,
+	WALL,
+	OTHER,
+	NONE
+};
+
 #endif // !SNEK_H
