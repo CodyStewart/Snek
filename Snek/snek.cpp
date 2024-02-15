@@ -13,6 +13,8 @@
 #include "timer.h"
 #include "actor.h"
 #include "menu.h"
+#include "ai.h"
+#include "graphGenerator.h"
 
 bool init();
 
@@ -34,6 +36,8 @@ int CURRENT_SCREEN_HEIGHT = DEFAULT_SCREEN_HEIGHT;
 
 uint UNIT_DISTANCE = (DEFAULT_SCREEN_HEIGHT - paddingY) / NUMOFCOLS;
 
+bool aiControlsPlayer1 = false;
+bool aiControlsPlayer2 = false;
 bool windowResized = false;
 bool runGame = true;
 bool endGameState = false;
@@ -326,6 +330,9 @@ int main(int argc, char* args[]) {
 			button->setBehavior(QuitGame);
 			menu->addButton(*button);
 
+			AI ai = AI();
+			GraphGenerator graphGen = GraphGenerator();
+
 			while (runGame) {
 				while (SDL_PollEvent(&e) != 0) {
 					if (e.type == SDL_QUIT) {
@@ -342,7 +349,7 @@ int main(int argc, char* args[]) {
 							menu->handleEvent(&e);
 
 					}
-					else if (e.type == SDL_KEYDOWN && !menuIsOpen) {
+					else if (e.type == SDL_KEYDOWN && !menuIsOpen && !aiControlsPlayer1) {
 						switch (e.key.keysym.sym) {
 						case SDLK_a:
 							if (snake.getDirection() != RIGHT) {
@@ -368,7 +375,7 @@ int main(int argc, char* args[]) {
 							}
 							break;
 						
-							if (twoPlayerMode) {
+							if (twoPlayerMode && !aiControlsPlayer2) {
 								case SDLK_LEFT:
 									if (rival.getDirection() != RIGHT) {
 										rival.setDesiredDirection(LEFT);
@@ -411,6 +418,23 @@ int main(int argc, char* args[]) {
 						CURRENT_SCREEN_WIDTH = window->getWidth();
 						
 						gameWorld.resizeGameWorld(UNIT_DISTANCE);
+					}
+				}
+
+				if (true) {
+					Graph graph = graphGen.convertWorldToGraph(gameWorld);
+					//player1SpeedStr.str("");
+					//player1SpeedStr << "Size of Graph: " << graph.getNumOfNodes();
+					//player1SpeedText->loadFromRenderedText(renderer, player1SpeedStr.str().c_str(), DefaultFont, { 255,255,255 });
+
+					if (aiControlsPlayer1) {
+						Direction player1Direction = ai.getDecision(&graph, &snake);
+						snake.setDesiredDirection(player1Direction);
+					}
+					
+					if (twoPlayerMode && aiControlsPlayer2) {
+						Direction player2Direction = ai.getDecision(&graph, &rival);
+						rival.setDesiredDirection(player2Direction);
 					}
 				}
 

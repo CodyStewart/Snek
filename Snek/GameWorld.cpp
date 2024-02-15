@@ -19,6 +19,8 @@ Cell::Cell() {
 	cellColor = { 255,255,255 };
 	cellBlock = {};
 
+	cellGridPosition = { 0,0 };
+
 	width = length = 0;
 	occupied = false;
 }
@@ -50,12 +52,17 @@ void Cell::setOccupied(bool isOccupied) {
 	occupied = isOccupied;
 }
 
+void Cell::setGridPosition(int row, int col) {
+	cellGridPosition = { row, col };
+}
+
 Texture* Cell::getTexture() { return cellTexture; }
 SDL_Color Cell::getColor() { return cellColor; }
 SDL_Rect* Cell::getRect() { return &cellBlock; }
 int Cell::getWidth() { return width; }
 int Cell::getLength() { return length; }
 bool Cell::getOccupied() { return occupied; }
+GridPosition Cell::getGridPosition() { return cellGridPosition; }
 
 GameWorld::GameWorld(int unitDist, const int numRows, const int numCols) {
 	unitDistance = unitDist;
@@ -71,6 +78,7 @@ GameWorld::GameWorld(int unitDist, const int numRows, const int numCols) {
 		for (int col = 0; col < numOfCols; col++) {
 			grid[row][col].setPosition(col * unitDistance + XOffset, row * unitDistance + paddingY);
 			grid[row][col].setDimensions(unitDistance);
+			grid[row][col].setGridPosition(row, col);
 		}
 	}
 }
@@ -146,6 +154,14 @@ GridPosition GameWorld::convertCoordsToRowCol(int x, int y) {
 	gp.row = rowNum;
 
 	return gp;
+}
+
+int GameWorld::getNumOfRows() {
+	return numOfRows;
+}
+
+int GameWorld::getNumOfCols() {
+	return numOfRows;
 }
 
 Cell* GameWorld::getGrid() {

@@ -307,33 +307,8 @@ void Menu::render(SDL_Renderer* renderer) {
 	}
 }
 
-void ResetGame() {
-	//gameWorld.resetGame();
-
-	//isPlayerOnesTurn = true;
-	//menuIsOpen = false;
-	//endGame = false;
-}
-
-void Quit() {
-	//quit = true;
-}
-
 void handleMenuButtons(Button* button) {
 	button->handleEvent();
-	//switch (button->getID())
-	//{
-	//case 0:
-	//	ResetGame();
-	//	break;
-
-	//case 1:
-	//	Quit();
-	//	break;
-
-	//default:
-	//	break;
-	//}
 }
 
 void Menu::handleEvent(SDL_Event* e) {
