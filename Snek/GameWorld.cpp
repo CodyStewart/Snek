@@ -5,7 +5,7 @@ Uint32 getPickupGenerationTime(GameWorld* world) {
 	Uint32 generationTime = 0;
 
 	if (world->getTimeSinceStartOfProgram() < 10000)
-		return 5000;
+		return 3000;
 	else if (world->getTimeSinceStartOfProgram() < 25000)
 		return 4000;
 	else if (world->getTimeSinceStartOfProgram() < 40000)
@@ -137,6 +137,17 @@ void GameWorld::resizeGameWorld(int newSize) {
 			// resize each cell
 			grid[row][col].setPosition(col * newSize + XOffset, row * newSize + paddingY);
 			grid[row][col].setDimensions(newSize);
+		}
+	}
+}
+
+void GameWorld::reset() {
+	timeSinceStartOfProgram.start();
+
+	for (int row = 0; row < numOfRows; row++) {
+		for (int col = 0; col < numOfCols; col++) {
+			// resize each cell
+			grid[row][col].setOccupied(false);
 		}
 	}
 }

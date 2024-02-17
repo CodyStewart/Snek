@@ -70,8 +70,10 @@ struct GameWorld {
 	int getNumOfRows();
 	int getNumOfCols();
 
+	void reset();
+
 private:
-	Cell grid[25][25];
+	Cell grid[NUMOFROWS][NUMOFCOLS];
 
 	Timer timeSinceStartOfProgram;
 

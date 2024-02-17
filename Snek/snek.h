@@ -12,6 +12,20 @@ typedef int uint;
 struct GridPosition {
 	uint row;
 	uint column;
+
+	//bool operator<(GridPosition rhs) {
+	//	return this->column < rhs.column;
+	//}
+
+	bool operator==(GridPosition rhs) {
+		return this->row == rhs.row && this->column == rhs.column;
+	}
+	//bool operator==(GridPosition& rhs) const {
+	//	return this->row == rhs.row && this->column == rhs.column;
+	//}
+	//bool operator < (GridPosition rhs) {
+	//	return ;
+	//}
 };
 
 enum playerNum {

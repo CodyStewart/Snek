@@ -9,14 +9,22 @@
 
 struct Node {
 	Node();
-	Node(Cell cell);
+	Node(GridPosition node);
 	
-	void setNode(Cell node);
+	void setNode(GridPosition node);
+	void setID(int id);
 	
+	bool empty();
+
 	//Node getNode();
+	GridPosition getGridPosition();
+	int getID();
+
+	bool operator==(const Node& rhs);
 
 private:
-	Cell node;
+	GridPosition node;
+	int id;
 };
 
 struct Connection {
@@ -39,11 +47,18 @@ struct Graph {
 	void addNode(Node& node);
 	void addConnection(Connection& connection);
 
+	void setGrid(Cell* worldGrid);
+
 	int getNumOfNodes();
+	Node getNode(GridPosition gp);
+	std::vector<Node>* getNodes();
+	std::vector<Connection>* getConnections();
+	std::vector<Node> getNeighbors(Node node);
 
 private:
 	std::vector<Node> nodesInGraph;
 	std::vector<Connection> connectionsInGraph;
+	Cell* grid;
 };
 
 struct GraphGenerator {

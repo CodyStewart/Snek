@@ -36,18 +36,20 @@ int CURRENT_SCREEN_HEIGHT = DEFAULT_SCREEN_HEIGHT;
 
 uint UNIT_DISTANCE = (DEFAULT_SCREEN_HEIGHT - paddingY) / NUMOFCOLS;
 
-bool aiControlsPlayer1 = false;
+bool aiControlsPlayer1 = true;
 bool aiControlsPlayer2 = false;
+bool twoPlayerMode = false;
 bool windowResized = false;
 bool runGame = true;
 bool endGameState = false;
 bool menuIsOpen = false;
-bool twoPlayerMode = false;
 uint gameScore = 0;
 
 GameWorld gameWorld = GameWorld(UNIT_DISTANCE, NUMOFROWS, NUMOFCOLS);
 Snake snake = Snake(&gameWorld, player1, "Player 1");
 Snake rival = Snake(&gameWorld, player2, "Player 2");
+AI ai = AI();
+
 
 std::vector<PickUp*> pickupGathering;
 
@@ -66,16 +68,18 @@ Mix_Music* music;
 Mix_Chunk* player1Sound;
 Mix_Chunk* player2Sound;
 
-
 void restartGame() {
 	gameScore = 0;
 	endGameState = false;
+	gameWorld.reset();
 
 	snake.getBody()->clear();
 	snake.setBody(&gameWorld);
 	snake.setDirection(UP);
 	snake.setDesiredDirection(UP);
 	snake.setSpeed(5);
+
+	ai.reset();
 
 	if (twoPlayerMode) {
 		rival.getBody()->clear();
@@ -205,7 +209,7 @@ void Render(SDL_Renderer* renderer) {
 	if (twoPlayerMode)
 		rival.render(renderer);
 	snake.render(renderer);
-	tb->render(renderer, 0, 0, NULL);
+	tb->render(renderer, 0, 120, NULL);
 	score->render(renderer, CURRENT_SCREEN_WIDTH - 250, 0);
 	player1SpeedText->render(renderer, 0, 0);
 	if (twoPlayerMode)
@@ -275,6 +279,61 @@ void Update(Uint32 deltaT) {
 	}
 }
 
+void addHeadNodeAndConnectionsToGraph(Graph* graph,Snake* snake, GameWorld* gameWorld) {
+	// get the id of the last node in graph
+	std::vector<Node>* nodesInGraph = graph->getNodes();
+	Node lastNodeInGraph = nodesInGraph->at(nodesInGraph->size() - 1);
+	int nodeId = lastNodeInGraph.getID();
+
+	Cell* snakeHeadCell = gameWorld->getCell(snake->getGridPosition().row, snake->getGridPosition().column);
+	Node snakeHeadNode = Node(snakeHeadCell->getGridPosition());
+	snakeHeadNode.setID(++nodeId);
+	graph->addNode(snakeHeadNode);
+
+	GridPosition thisCellsGP = snakeHeadCell->getGridPosition();
+
+	// add the rightward connection
+	if (thisCellsGP.column < NUMOFCOLS - 1) {
+		Cell* cellToTheRight = gameWorld->getCell(thisCellsGP.row, thisCellsGP.column + 1); // NOTE: nodes on right column will not have rightward connections, need to fix this; can fix by looking at grid position?
+		bool cellOnRightOccupied = cellToTheRight->getOccupied();
+		if (!cellOnRightOccupied) {
+			Node nodeOnRight = Node(cellToTheRight->getGridPosition());
+			Connection newConnectionRight = Connection(snakeHeadNode, nodeOnRight);
+			graph->addConnection(newConnectionRight);
+		}
+	}
+	// add the netherward connection
+	if (thisCellsGP.row < NUMOFROWS - 1) {
+		Cell* cellBelow = gameWorld->getCell(thisCellsGP.row + 1, thisCellsGP.column); // NOTE: nodes on bottom row will not have netherward connections, need to fix this
+		bool cellBelowOccupied = cellBelow->getOccupied();
+		if (!cellBelowOccupied) {
+			Node nodeBelow = Node(cellBelow->getGridPosition());
+			Connection newConnectionBelow = Connection(snakeHeadNode, nodeBelow);
+			graph->addConnection(newConnectionBelow);
+		}
+	}
+	// add the leftward connection
+	if (thisCellsGP.column > 0) {
+		Cell* cellLeft = gameWorld->getCell(thisCellsGP.row, thisCellsGP.column - 1); // NOTE: nodes on bottom row will not have netherward connections, need to fix this
+		bool cellLeftOccupied = cellLeft->getOccupied();
+		if (!cellLeftOccupied) {
+			Node nodeBelow = Node(cellLeft->getGridPosition());
+			Connection newConnectionLeft = Connection(snakeHeadNode, nodeBelow);
+			graph->addConnection(newConnectionLeft);
+		}
+	}
+	// add the upward connection
+	if (thisCellsGP.row > 0) {
+		Cell* cellAbove = gameWorld->getCell(thisCellsGP.row - 1, thisCellsGP.column); // NOTE: nodes on bottom row will not have netherward connections, need to fix this
+		bool cellAboveOccupied = cellAbove->getOccupied();
+		if (!cellAboveOccupied) {
+			Node nodeAbove = Node(cellAbove->getGridPosition());
+			Connection newConnectionAbove = Connection(snakeHeadNode, nodeAbove);
+			graph->addConnection(newConnectionAbove);
+		}
+	}
+}
+
 int main(int argc, char* args[]) {
 	if (!init()) {
 		printf("Failed to initialize app!\n");
@@ -307,6 +366,7 @@ int main(int argc, char* args[]) {
 			std::stringstream player1SpeedStr;
 			std::stringstream player2SpeedStr;
 			std::stringstream scoreStr;
+			std::stringstream fpsStr;
 
 			scoreStr.str("Score: 0");
 
@@ -330,7 +390,6 @@ int main(int argc, char* args[]) {
 			button->setBehavior(QuitGame);
 			menu->addButton(*button);
 
-			AI ai = AI();
 			GraphGenerator graphGen = GraphGenerator();
 
 			while (runGame) {
@@ -421,19 +480,23 @@ int main(int argc, char* args[]) {
 					}
 				}
 
-				if (true) {
+				if (!endGameState && (aiControlsPlayer1 || aiControlsPlayer2)) {
 					Graph graph = graphGen.convertWorldToGraph(gameWorld);
 					//player1SpeedStr.str("");
 					//player1SpeedStr << "Size of Graph: " << graph.getNumOfNodes();
 					//player1SpeedText->loadFromRenderedText(renderer, player1SpeedStr.str().c_str(), DefaultFont, { 255,255,255 });
 
 					if (aiControlsPlayer1) {
-						Direction player1Direction = ai.getDecision(&graph, &snake);
+						addHeadNodeAndConnectionsToGraph(&graph, &snake, &gameWorld);
+
+						Direction player1Direction = ai.getDecision(&graph, &snake, &pickupGathering);
 						snake.setDesiredDirection(player1Direction);
 					}
 					
 					if (twoPlayerMode && aiControlsPlayer2) {
-						Direction player2Direction = ai.getDecision(&graph, &rival);
+						addHeadNodeAndConnectionsToGraph(&graph, &rival, &gameWorld);
+
+						Direction player2Direction = ai.getDecision(&graph, &rival, &pickupGathering);
 						rival.setDesiredDirection(player2Direction);
 					}
 				}
@@ -450,14 +513,15 @@ int main(int argc, char* args[]) {
 					player2SpeedText->loadFromRenderedText(renderer, player2SpeedStr.str().c_str(), DefaultFont, { 255,255,255 });
 				}
 
-				//totalMS = SDL_GetTicks();
-				//float avgFPS = countedFrames / (totalMS / 1000.0f);
-				//avgFPS = floor(avgFPS);
-				//if (avgFPS > 20000)
-				//	avgFPS = 0;
+				totalMS = SDL_GetTicks();
+				float avgFPS = countedFrames / (totalMS / 1000.0f);
+				avgFPS = floor(avgFPS);
+				if (avgFPS > 20000)
+					avgFPS = 0;
 
-				//ss << "avgFPS: " << avgFPS << "   deltaT: " << deltaT;
-				//tb->loadFromRenderedText(renderer, ss.str().c_str(), DefaultFont, {255,255,255});
+				fpsStr.str("");
+				fpsStr << "avgFPS: " << avgFPS << "   deltaT: " << deltaT;
+				tb->loadFromRenderedText(renderer, fpsStr.str().c_str(), DefaultFont, {255,255,255});
 
 				//float framerate = 1000.0f / deltaT;
 				

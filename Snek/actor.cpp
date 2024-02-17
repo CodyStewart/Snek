@@ -446,6 +446,10 @@ Cell PickUp::getCell() {
 	return puCell;
 }
 
+GridPosition PickUp::getPosition() {
+	return puPosition;
+}
+
 SizeUp::SizeUp() {
 	puPosition = { 0,0 };
 	Cell cell = Cell();
@@ -460,6 +464,9 @@ SizeUp::SizeUp(SDL_Color szColor, Cell* cell) {
 	puRect->w = cellRect->w;
 	puRect->h = cellRect->h;
 	puCell.setDimensions(puRect->h);
+	puCell.setGridPosition(cell->getGridPosition().row, cell->getGridPosition().column);
+	puPosition.column = cell->getGridPosition().column;
+	puPosition.row = cell->getGridPosition().row;
 }
 
 void SizeUp::handle(Snake snek) {
@@ -474,4 +481,8 @@ void SizeUp::render(SDL_Renderer* renderer) {
 
 Cell SizeUp::getCell() {
 	return puCell;
+}
+
+GridPosition SizeUp::getPosition() {
+	return puPosition;
 }

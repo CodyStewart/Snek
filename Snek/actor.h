@@ -78,6 +78,7 @@ struct PickUp {
 	virtual void render(SDL_Renderer* renderer);
 
 	virtual Cell getCell();
+	GridPosition getPosition();
 
 protected:
 	Cell puCell;
@@ -91,6 +92,7 @@ struct SizeUp : public PickUp {
 	void handle(Snake snek) override;
 	void render(SDL_Renderer* renderer) override;
 	Cell getCell() override;
+	GridPosition getPosition();
 };
 
 #endif // !ACTOR_H
