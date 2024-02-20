@@ -135,6 +135,7 @@
   <ItemGroup>
     <ClCompile Include="actor.cpp" />
     <ClCompile Include="ai.cpp" />
+    <ClCompile Include="animation.cpp" />
     <ClCompile Include="GameWorld.cpp" />
     <ClCompile Include="graphGenerator.cpp" />
     <ClCompile Include="menu.cpp" />
@@ -146,6 +147,7 @@
   <ItemGroup>
     <ClInclude Include="actor.h" />
     <ClInclude Include="ai.h" />
+    <ClInclude Include="animation.h" />
     <ClInclude Include="GameWorld.h" />
     <ClInclude Include="graphGenerator.h" />
     <ClInclude Include="menu.h" />

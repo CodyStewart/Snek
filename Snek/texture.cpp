@@ -44,6 +44,7 @@ void Texture::free() {
 	}
 }
 
+SDL_Texture* Texture::getTexture() { return texture; }
 int Texture::getWidth() { return width; }
 int Texture::getHeight() { return height; }
 

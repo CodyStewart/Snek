@@ -15,6 +15,7 @@
 #include "menu.h"
 #include "ai.h"
 #include "graphGenerator.h"
+#include "animation.h"
 
 bool init();
 
@@ -43,6 +44,7 @@ bool windowResized = false;
 bool runGame = true;
 bool endGameState = false;
 bool menuIsOpen = false;
+bool inGame = false;
 uint gameScore = 0;
 
 GameWorld gameWorld = GameWorld(UNIT_DISTANCE, NUMOFROWS, NUMOFCOLS);
@@ -62,7 +64,14 @@ TextTexture* player1SpeedText = new TextTexture();
 TextTexture* player2SpeedText = new TextTexture();
 TextTexture* pickupGenerationSpeedText = new TextTexture();
 
-Menu* menu;
+Menu* mainMenu;
+Menu* subMenu;
+Menu* inGameMenu;
+
+Texture mainMenuTexture = Texture();
+
+Animation player1Appear = Animation();
+Animation player1Idle = Animation();
 
 Mix_Music* music;
 Mix_Chunk* player1Sound;
@@ -119,6 +128,7 @@ bool init() {
 			renderer = window->createRenderer();
 			if (renderer == NULL) {
 				printf("Renderer was not created! SDL_Error: %s\n", SDL_GetError());
+				success = false;
 			}
 			else {
 				int imgFlags = IMG_INIT_JPG | IMG_INIT_PNG;
@@ -145,6 +155,25 @@ bool init() {
 
 bool loadMedia() {
 	bool success = true;
+
+	// load main menu title
+	if (!mainMenuTexture.loadTextureFromFile(renderer, "openingAnimations/snakeTitle3.png"))
+	{
+		printf("Failed to load title screen texture!\n");
+		success = false;
+	}
+
+	// load player 1 appearance animation
+	if (!player1Appear.loadAnimationFromFile(renderer, "openingAnimations/player1AppearAnimation.png")) {
+		printf("Failed to load player 1 appearance animation!\n");
+		success = false;
+	}
+
+	// load player 1 idle animation
+	if (!player1Idle.loadAnimationFromFile(renderer, "openingAnimations/player1IdleAnimation.png")) {
+		printf("Failed to load player 1 appearance animation!\n");
+		success = false;
+	}
 
 	// load music
 	music = Mix_LoadMUS("Minus 273 Degrees.wav");
@@ -202,24 +231,32 @@ void close() {
 void Render(SDL_Renderer* renderer) {
 	SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
 	SDL_RenderClear(renderer);
-	gameWorld.render(renderer);
-	for (int i = 0; i < pickupGathering.size(); i++) {
-		pickupGathering[i]->render(renderer);
+	if (!inGame) {
+		mainMenu->render(renderer, {0,0,0});
+		player1Appear.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player1Appear.getSpriteWidth() / 2, 0);
+		player1Idle.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player1Idle.getSpriteWidth() / 2, 0);
 	}
-	if (twoPlayerMode)
-		rival.render(renderer);
-	snake.render(renderer);
-	tb->render(renderer, 0, 120, NULL);
-	score->render(renderer, CURRENT_SCREEN_WIDTH - 250, 0);
-	player1SpeedText->render(renderer, 0, 0);
-	if (twoPlayerMode)
-		player2SpeedText->render(renderer, 0, 40);
-	pickupGenerationSpeedText->render(renderer, 0, 80);
-	if (endGameState)
-		winLoseText->render(renderer, CURRENT_SCREEN_WIDTH / 2, CURRENT_SCREEN_HEIGHT / 2);
+	else {
+		gameWorld.render(renderer);
+		for (int i = 0; i < pickupGathering.size(); i++) {
+			pickupGathering[i]->render(renderer);
+		}
+		if (twoPlayerMode)
+			rival.render(renderer);
+		snake.render(renderer);
+		tb->render(renderer, 0, 120, NULL);
+		score->render(renderer, CURRENT_SCREEN_WIDTH - 250, 0);
+		player1SpeedText->render(renderer, 0, 0);
+		if (twoPlayerMode)
+			player2SpeedText->render(renderer, 0, 40);
+		pickupGenerationSpeedText->render(renderer, 0, 80);
+		if (endGameState)
+			winLoseText->render(renderer, CURRENT_SCREEN_WIDTH / 2, CURRENT_SCREEN_HEIGHT / 2);
+	}
 	if (menuIsOpen) {
-		menu->render(renderer);
+		inGameMenu->render(renderer, {255,255,255});
 	}
+	
 	SDL_RenderPresent(renderer);
 }
 
@@ -227,7 +264,10 @@ void Update(Uint32 deltaT) {
 	static Uint32 accumulatedTimeForPlayer1 = 0;
 	static Uint32 accumulatedTimeForPlayer2 = 0;
 
-	if (!menuIsOpen) {
+	player1Appear.update();
+	player1Idle.update();
+
+	if (!menuIsOpen && inGame) {
 		accumulatedTimeForPlayer1 += deltaT;
 		accumulatedTimeForPlayer2 += deltaT;
 		snake.move(accumulatedTimeForPlayer1, &gameWorld);
@@ -373,24 +413,37 @@ int main(int argc, char* args[]) {
 			winLoseText->loadFromRenderedText(renderer, "The game is over!", DefaultFont, { 255,255,255 });
 			score->loadFromRenderedText(renderer, scoreStr.str().c_str(), DefaultFont, {255,255,255});
 
-			menu = new Menu(CURRENT_SCREEN_WIDTH / 2 - 250, CURRENT_SCREEN_HEIGHT / 2 - 250, 500, 500, "");
-			menu->setTextDimensions(0.7f, 0.12f);
-			menu->setTextPosition(0.15f, 0.1f);
+			mainMenu = new Menu(CURRENT_SCREEN_WIDTH / 2 - mainMenuTexture.getWidth() / 2, 0, CURRENT_SCREEN_WIDTH, CURRENT_SCREEN_HEIGHT);
+			mainMenu->setTexture(&mainMenuTexture);
 
-			SDL_Point menuPos = menu->getPos();
+			inGameMenu = new Menu(CURRENT_SCREEN_WIDTH / 2 - 250, CURRENT_SCREEN_HEIGHT / 2 - 250, 500, 500, "");
+			inGameMenu->setTextDimensions(0.7f, 0.12f);
+			inGameMenu->setTextPosition(0.15f, 0.1f);
+
+			SDL_Point menuPos = inGameMenu->getPos();
 			menuPos.x += 200;
 			menuPos.y += 200;
 			Button* button = new Button("Restart", menuPos, 100, 50);
 			button->setBehavior(restartGame);
-			menu->addButton(*button);
+			inGameMenu->addButton(*button);
 
 			menuPos.x += 8;
 			menuPos.y += 100;
 			button = new Button("Quit", menuPos, 80, 50);
 			button->setBehavior(QuitGame);
-			menu->addButton(*button);
+			inGameMenu->addButton(*button);
 
 			GraphGenerator graphGen = GraphGenerator();
+
+			player1Appear.setSpriteDimensions(1000, 1000);
+			player1Appear.setAnimationTime(1200);
+			player1Appear.setNumOfFrames(7);
+			player1Appear.startAnimation();
+
+			player1Idle.setSpriteDimensions(1000, 1000);
+			player1Idle.setAnimationTime(1800);
+			player1Idle.setNumOfFrames(13);
+			player1Idle.setLooping(true);
 
 			while (runGame) {
 				while (SDL_PollEvent(&e) != 0) {
@@ -403,9 +456,9 @@ int main(int argc, char* args[]) {
 					}
 					else if (menuIsOpen) {
 						if (e.type == SDL_MOUSEMOTION) 
-							menu->handleEvent(&e);
+							inGameMenu->handleEvent(&e);
 						else if (e.type == SDL_MOUSEBUTTONDOWN) 
-							menu->handleEvent(&e);
+							inGameMenu->handleEvent(&e);
 
 					}
 					else if (e.type == SDL_KEYDOWN && !menuIsOpen && !aiControlsPlayer1) {
@@ -532,9 +585,13 @@ int main(int argc, char* args[]) {
 				scoreStr << "Score: " << gameScore;
 				score->loadFromRenderedText(renderer, scoreStr.str().c_str(), DefaultFont, { 255,255,255 });
 
+
 				if (!endGameState && !pauseGame) {
 					Update(deltaT);
 				}
+
+				if (!player1Appear.isPlaying() && !player1Idle.isPlaying())
+					player1Idle.startAnimation();
 
 				if (!window->isMinimized()) {
 					Render(renderer);

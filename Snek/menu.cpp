@@ -62,6 +62,10 @@ SDL_Rect* TextBox::getRect() {
 	return box;
 }
 
+std::string TextBox::getText() {
+	return text;
+}
+
 SDL_Texture* TextBox::getTexture() {
 	return texture;
 }
@@ -171,6 +175,7 @@ bool Button::IsHighlighted() {
 
 Menu::Menu() {
 	outline = nullptr;
+	menuTexture = nullptr;
 	position.x = 0;
 	position.y = 0;
 	width = 0;
@@ -180,6 +185,8 @@ Menu::Menu() {
 }
 
 Menu::Menu(int x, int y, int w, int h, std::string text) {
+	menuTexture = nullptr;
+
 	position.x = x;
 	position.y = y;
 	width = w;
@@ -217,6 +224,10 @@ void Menu::setText(std::string text) {
 
 void Menu::setText(std::string text, TTF_Font* font) {
 	textbox->setText(text, font);
+}
+
+void Menu::setTexture(Texture* texture) {
+	menuTexture = texture;
 }
 
 void Menu::resetTexture() {
@@ -259,10 +270,17 @@ void Menu::setTextDimensions(float w, float h) {
 	this->resetTexture();
 }
 
-void Menu::render(SDL_Renderer* renderer) {
-	SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-	SDL_RenderFillRect(renderer, outline);
-	SDL_RenderCopy(renderer, textbox->getTexture(), NULL, textbox->getRect());
+void Menu::render(SDL_Renderer* renderer, SDL_Color color) {
+	SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 0xFF);
+	if (outline != nullptr) {
+		SDL_RenderFillRect(renderer, outline);
+	}
+	if (textbox->getText() != "") {
+		SDL_RenderCopy(renderer, textbox->getTexture(), NULL, textbox->getRect());
+	}
+	if (menuTexture != nullptr) {
+		menuTexture->render(renderer, position.x, position.y);
+	}
 
 	SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
 	for (int i = 0; i < buttons.size(); i++) {

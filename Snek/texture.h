@@ -19,6 +19,7 @@ struct Texture
 
 	void render(SDL_Renderer* renderer, int x, int y, SDL_Rect* clip = NULL);
 
+	SDL_Texture* getTexture();
 	int getWidth();
 	int getHeight();
 

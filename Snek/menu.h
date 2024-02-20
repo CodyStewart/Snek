@@ -23,6 +23,7 @@ public:
 
 	SDL_Color getTextColor();
 	SDL_Rect* getRect();
+	std::string getText();
 	SDL_Texture* getTexture();
 
 	void resetTexture();
@@ -75,7 +76,7 @@ private:
 class Menu {
 public:
 	Menu();
-	Menu(int x, int y, int width, int height, std::string text);
+	Menu(int x, int y, int width, int height, std::string text = "");
 
 	void addButton(Button button);
 	SDL_Rect* getRect();
@@ -85,13 +86,15 @@ public:
 	void setText(std::string text, TTF_Font* font);
 	void setTextPosition(float x, float y);
 	void setTextDimensions(float w, float h);
+	void setTexture(Texture* menuTexture);
 	void resetTexture();
 
 	void handleEvent(SDL_Event* e);
-	void render(SDL_Renderer* renderer);
+	void render(SDL_Renderer* renderer, SDL_Color color);
 
 private:
 	SDL_Point position;
+	Texture* menuTexture;
 	TextBox* textbox;
 	SDL_Rect* outline;
 	std::vector<Button> buttons;
