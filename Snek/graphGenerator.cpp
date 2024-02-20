@@ -2,10 +2,12 @@
 
 Node::Node() {
 	node = { -1,-1 };
+	weight = 1;
 }
 
 Node::Node(GridPosition lNode) {
 	node = lNode;
+	weight = 1;
 }
 
 void Node::setNode(GridPosition nodeToBeSet) {
@@ -14,6 +16,10 @@ void Node::setNode(GridPosition nodeToBeSet) {
 
 void Node::setID(int nodeID) {
 	id = nodeID;
+}
+
+void Node::setWeight(uint newWeight) {
+	weight = newWeight;
 }
 
 bool Node::empty() {
@@ -26,6 +32,10 @@ GridPosition Node::getGridPosition() {
 
 int Node::getID() {
 	return id;
+}
+
+int Node::getWeight() {
+	return weight;
 }
 
 bool Node::operator==(const Node& rhs) {

@@ -119,11 +119,16 @@ Path convertIDsToGridPositions(std::vector<int> pathToEndNode, Graph* graph) {
 	return Path(path);
 }
 
-//int heuristic(Graph* graph) {
-//
-//}
+// we use the euclidean distance as our heurisitic
+int heuristic(Node* thisNode, Node* goalNode) {
+	return getEuclidDistance(thisNode->getGridPosition(), goalNode->getGridPosition());
+}
 
-//bool operator<(const )
+struct WeightCompare {
+	bool operator()(Node& lhs, Node& rhs) {
+		return lhs.getWeight() > rhs.getWeight();
+	}
+};
 
 Path FindPathViaAStar(Node startNode, Node endNode, Graph* graph) {
 	/* Starting from startNode, we need to get to endNode. If no such path exists, return empty*/
@@ -148,13 +153,17 @@ Path FindPathViaAStar(Node startNode, Node endNode, Graph* graph) {
 	std::map<int, Node> closedList;
 	std::map<int, Node> openList;
 	std::map<int, int> cameFrom;
-	std::queue<Node> priority;
+	//std::queue<Node> priority;
+	std::priority_queue<Node, std::vector<Node>, WeightCompare> priority;
 	// add startNode to the closed list 
 	closedList.insert({ startNode.getID(), startNode});
 	std::pair<int, int> pr = std::make_pair(startNode.getID(), startNode.getID());
 	cameFrom.insert(pr);
+	int costSoFar = 0;
 	// add neighbors to the open list
 	for (Node next : graph->getNeighbors(startNode)) {
+		costSoFar = next.getWeight() + heuristic(&next, &endNode);
+		next.setWeight(costSoFar);
 		openList.insert({ next.getID(), next});
 		priority.push(next);
 		pr = std::make_pair(next.getID(), startNode.getID());
@@ -165,14 +174,13 @@ Path FindPathViaAStar(Node startNode, Node endNode, Graph* graph) {
 	while (!openList.empty()) {
 		Node currentNode;
 		if (priority.size() > 0) {
-			currentNode = priority.front();
+			currentNode = priority.top();
 			priority.pop();
 		}
 		else {
 			printf("priority size is 0. return an empty path\n");
 			return Path();
 		}
-
 
 		if (currentNode == endNode)
 			break;
@@ -183,14 +191,28 @@ Path FindPathViaAStar(Node startNode, Node endNode, Graph* graph) {
 			if (searchClosed == closedList.end()) {	// neighbor not found in closedList
 				auto searchOpen = openList.find(next.getID());
 				if (searchOpen == openList.end()) { // neighbor also not found in openList
+					costSoFar = next.getWeight() + heuristic(&next, &endNode);
+					next.setWeight(costSoFar);
 					openList.insert({ next.getID(), next});	// add currentNode's neighbors to the open list to be examined later
 					priority.push(next);
 					pr = std::make_pair(next.getID(), currentNode.getID());
 					cameFrom.insert(pr);
 				}
+				else {	// neighbor in openList, check if we found a better path
+					costSoFar = next.getWeight() + heuristic(&next, &endNode);
+					if (next.getWeight() > costSoFar) {
+						next.setWeight(costSoFar);
+						openList.erase(next.getID());
+						openList.insert({ next.getID(), next });	
+						priority.push(next);
+						pr = std::make_pair(next.getID(), currentNode.getID());
+						cameFrom.insert(pr);
+					}
+				}
 			}
 		}
 
+		openList.erase(currentNode.getID());
 		closedList.insert({ currentNode.getID(), currentNode});
 	}
 
@@ -232,24 +254,24 @@ Direction chooseRandomDirection() {
 
 GridPosition nearbyValidNodeToMoveTo(Snake* snake, Graph* graph) {
 	GridPosition snakePosition = snake->getGridPosition();
-	printf("Inside neabyValidNodeToMoveTo\n");
+	printf("Inside nearbyValidNodeToMoveTo\n");
 	
-	GridPosition prospectivePositionToMoveTo = { snakePosition.column - 1, snakePosition.row };	// check cell on the left
+	GridPosition prospectivePositionToMoveTo = { snakePosition.row, snakePosition.column - 1 };	// check cell on the left
 	Node prospectiveNode = graph->getNode(prospectivePositionToMoveTo);
 	if (!prospectiveNode.empty())	// node is in graph and therefore valid
 		return prospectivePositionToMoveTo;	// move left
 	
-	prospectivePositionToMoveTo = { snakePosition.column + 1, snakePosition.row };	// check cell on the right
+	prospectivePositionToMoveTo = { snakePosition.row, snakePosition.column + 1 };	// check cell on the right
 	prospectiveNode = graph->getNode(prospectivePositionToMoveTo);
 	if (!prospectiveNode.empty())	// node is in graph and therefore valid
 		return prospectivePositionToMoveTo;	// move right
 
-	prospectivePositionToMoveTo = { snakePosition.column, snakePosition.row - 1 };	// check cell above
+	prospectivePositionToMoveTo = { snakePosition.row - 1, snakePosition.column };	// check cell above
 	prospectiveNode = graph->getNode(prospectivePositionToMoveTo);
 	if (!prospectiveNode.empty())	// node is in graph and therefore valid
 		return prospectivePositionToMoveTo;	// move up
 
-	prospectivePositionToMoveTo = { snakePosition.column, snakePosition.row + 1 };	// check cell below
+	prospectivePositionToMoveTo = { snakePosition.row + 1, snakePosition.column};	// check cell below
 	prospectiveNode = graph->getNode(prospectivePositionToMoveTo);
 	if (!prospectiveNode.empty())	// node is in graph and therefore valid
 		return prospectivePositionToMoveTo;	// move down
@@ -280,7 +302,7 @@ Direction AI::getDecision(Graph* graph, Snake* snake, std::vector<PickUp*>* pick
 				chosenPath = FindPathViaAStar(startNode, goalNode, graph);
 			}
 			if (chosenPath.getPath().size() == 0) {	// we could not find a path to any of the closest pickups, return a random direction
-				return chooseDirection(snake->getGridPosition(), nearbyValidNodeToMoveTo(snake, graph));
+				goto fallback;
 			}
 			
 			return chooseDirection(snake->getGridPosition(), chosenPath.getFirst());
@@ -292,6 +314,7 @@ Direction AI::getDecision(Graph* graph, Snake* snake, std::vector<PickUp*>* pick
 	}
 	// we probably want to traipse to our previously selected traipse node so long as a path exists. if it doesn't we get a new traipse node
 	else {
+		fallback:
 		if (traipseTarget.getGridPosition() == GridPosition({ -1, -1 })) {	// we do not currently have a traipse target, get one
 			goalNode = getNewTraipseTarget(graph);
 			traipseTarget = goalNode;

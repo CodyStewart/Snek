@@ -147,7 +147,7 @@ bool loadMedia() {
 	bool success = true;
 
 	// load music
-	music = Mix_LoadMUS("Apoxode_-_Oortian_Clouds_1.mp3");
+	music = Mix_LoadMUS("Minus 273 Degrees.wav");
 	if (music == NULL) {
 		printf("Failed to load music! SDL_mixer Error: %s\n", Mix_GetError());
 		//success = false;

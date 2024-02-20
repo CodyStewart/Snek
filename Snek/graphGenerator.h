@@ -13,18 +13,21 @@ struct Node {
 	
 	void setNode(GridPosition node);
 	void setID(int id);
+	void setWeight(uint weight);
 	
 	bool empty();
 
 	//Node getNode();
 	GridPosition getGridPosition();
 	int getID();
+	uint getWeight();
 
 	bool operator==(const Node& rhs);
 
 private:
 	GridPosition node;
 	int id;
+	int weight;
 };
 
 struct Connection {
