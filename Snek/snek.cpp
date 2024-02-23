@@ -37,14 +37,20 @@ int CURRENT_SCREEN_HEIGHT = DEFAULT_SCREEN_HEIGHT;
 
 uint UNIT_DISTANCE = (DEFAULT_SCREEN_HEIGHT - paddingY) / NUMOFCOLS;
 
-bool aiControlsPlayer1 = true;
-bool aiControlsPlayer2 = false;
 bool twoPlayerMode = false;
-bool windowResized = false;
-bool runGame = true;
 bool endGameState = false;
 bool menuIsOpen = false;
+
+bool inStartMenu = true;
+bool inMainMenu = false;
+bool inOnePlayerSubMenu = false;
+bool inTwoPlayerSubMenu = false;
 bool inGame = false;
+
+bool aiControlsPlayer1 = false;
+bool aiControlsPlayer2 = false;
+bool windowResized = false;
+bool runGame = true;
 uint gameScore = 0;
 
 GameWorld gameWorld = GameWorld(UNIT_DISTANCE, NUMOFROWS, NUMOFCOLS);
@@ -52,10 +58,10 @@ Snake snake = Snake(&gameWorld, player1, "Player 1");
 Snake rival = Snake(&gameWorld, player2, "Player 2");
 AI ai = AI();
 
-
 std::vector<PickUp*> pickupGathering;
 
 TTF_Font* DefaultFont = NULL;
+TTF_Font* pixelFont = NULL;
 
 TextTexture* tb = new TextTexture();
 TextTexture* winLoseText = new TextTexture();
@@ -63,15 +69,26 @@ TextTexture* score = new TextTexture();
 TextTexture* player1SpeedText = new TextTexture();
 TextTexture* player2SpeedText = new TextTexture();
 TextTexture* pickupGenerationSpeedText = new TextTexture();
+TextTexture* startMenuText = new TextTexture();
 
+Menu* startMenu;
 Menu* mainMenu;
-Menu* subMenu;
+Menu* onePlayerSubMenu;
+Menu* twoPlayerSubMenu;
 Menu* inGameMenu;
 
 Texture mainMenuTexture = Texture();
 
 Animation player1Appear = Animation();
 Animation player1Idle = Animation();
+Animation player1Quizical = Animation();
+Animation player1Select = Animation();
+Animation player1Unimpressed = Animation();
+Animation player2Appear = Animation();
+Animation player2Idle = Animation();
+Animation player2Quizical = Animation();
+Animation player2Select = Animation();
+Animation player2Angry = Animation();
 
 Mix_Music* music;
 Mix_Chunk* player1Sound;
@@ -104,6 +121,99 @@ void restartGame() {
 
 void QuitGame() {
 	runGame = false;
+}
+
+void OnePlayerSetup() {
+	inOnePlayerSubMenu = true;
+	inMainMenu = false;
+
+	player1Idle.stopAnimation();
+	player1Quizical.startAnimation();
+}
+
+void OnePlayerStartHuman() {
+	inOnePlayerSubMenu = false;
+	inGame = true;
+	aiControlsPlayer1 = false;
+
+	player1Quizical.stopAnimation();
+	player2Idle.stopAnimation();
+}
+
+void OnePlayerStartAI() {
+	inOnePlayerSubMenu = false;
+	inGame = true;
+	aiControlsPlayer1 = true;
+
+	player1Quizical.stopAnimation();
+	player2Idle.stopAnimation();
+}
+
+void BackToMainMenu() {
+	inOnePlayerSubMenu = false;
+	inMainMenu = true;
+
+	player1Quizical.stopAnimation();
+	player1Idle.startAnimation();
+}
+
+void TwoPlayerSetup() {
+	inTwoPlayerSubMenu = true;
+	inMainMenu = false;
+
+	player1Idle.stopAnimation();
+	player2Idle.stopAnimation();
+
+	player1Quizical.startAnimation();
+	player2Quizical.startAnimation();
+}
+
+void TwoPlayerStartHuman() {
+	twoPlayerMode = true;
+	inTwoPlayerSubMenu = false;
+	inGame = true;
+	aiControlsPlayer1 = false;
+
+	player1Quizical.stopAnimation();
+	player2Quizical.stopAnimation();
+}
+
+void TwoPlayerStartOneAI() {
+	twoPlayerMode = true;
+	inTwoPlayerSubMenu = false;
+	inGame = true;
+	aiControlsPlayer1 = false;
+	aiControlsPlayer2 = true;
+
+	player1Quizical.stopAnimation();
+	player2Quizical.stopAnimation();
+}
+
+void TwoPlayerStartTwoAI() {
+	twoPlayerMode = true;
+	inTwoPlayerSubMenu = false;
+	inGame = true;
+	aiControlsPlayer1 = true;
+	aiControlsPlayer2 = true;
+
+	player1Quizical.stopAnimation();
+	player2Quizical.stopAnimation();
+}
+
+void DrawMainMenu(SDL_Renderer* renderer) {
+	/*SDL_Rect mainMenuRect = { CURRENT_SCREEN_WIDTH * 11 / 40, CURRENT_SCREEN_HEIGHT * 7 / 10, CURRENT_SCREEN_WIDTH * 9 / 20, CURRENT_SCREEN_HEIGHT / 4 };
+	SDL_SetRenderDrawColor(renderer, 0xFF, 0xEB, 0x3B, 0xFF);
+	SDL_RenderDrawRect(renderer, &mainMenuRect);
+	SDL_RenderDrawRect(renderer, &mainMenuRect);*/
+	mainMenu->render(renderer, { 0,0,0 });
+}
+
+void DrawOnePlayerSubMenu(SDL_Renderer* renderer) {
+	onePlayerSubMenu->render(renderer, { 0,0,0 });
+}
+
+void DrawTwoPlayerSubMenu(SDL_Renderer* renderer) {
+	twoPlayerSubMenu->render(renderer, { 0,0,0 });
 }
 
 bool init() {
@@ -175,6 +285,54 @@ bool loadMedia() {
 		success = false;
 	}
 
+	// load player 2 appearance animation
+	if (!player2Appear.loadAnimationFromFile(renderer, "openingAnimations/player2Appear.png")) {
+		printf("Failed to load player 2 appearance animation!\n");
+		success = false;
+	}
+
+	// load player 2 idle animation
+	if (!player2Idle.loadAnimationFromFile(renderer, "openingAnimations/player2IdleAnimation.png")) {
+		printf("Failed to load player 2 idle animation!\n");
+		success = false;
+	}
+
+	// load player 1 quizical animation
+	if (!player1Quizical.loadAnimationFromFile(renderer, "openingAnimations/player1Quizical.png")) {
+		printf("Failed to load player 2 idle animation!\n");
+		success = false;
+	}
+
+	// load player 1 select animation
+	if (!player1Select.loadAnimationFromFile(renderer, "openingAnimations/player1SelectAnimation.png")) {
+		printf("Failed to load player 2 idle animation!\n");
+		success = false;
+	}
+
+	// load player 1 unimpressed animation
+	if (!player1Unimpressed.loadAnimationFromFile(renderer, "openingAnimations/player1UnimpressedAnimation.png")) {
+		printf("Failed to load player 2 idle animation!\n");
+		success = false;
+	}
+
+	// load player 2 quizical animation
+	if (!player2Quizical.loadAnimationFromFile(renderer, "openingAnimations/player2QuizicalAnimation.png")) {
+		printf("Failed to load player 2 idle animation!\n");
+		success = false;
+	}
+
+	// load player 2 select animation
+	if (!player2Select.loadAnimationFromFile(renderer, "openingAnimations/player2SelectAnimation.png")) {
+		printf("Failed to load player 2 idle animation!\n");
+		success = false;
+	}
+
+	// load player 2 angry animation
+	if (!player2Angry.loadAnimationFromFile(renderer, "openingAnimations/player2Angry.png")) {
+		printf("Failed to load player 2 idle animation!\n");
+		success = false;
+	}
+
 	// load music
 	music = Mix_LoadMUS("Minus 273 Degrees.wav");
 	if (music == NULL) {
@@ -200,6 +358,12 @@ bool loadMedia() {
 		success = false;
 	}
 
+	pixelFont = TTF_OpenFont("Unibody8Pro-Regular.otf", 36);
+	if (pixelFont == NULL) {
+		printf("TTF could not open font! SDL_ttf Error: %s\n", TTF_GetError());
+		success = false;
+	}
+
 	return success;
 }
 
@@ -216,6 +380,9 @@ void close() {
 	TTF_CloseFont(DefaultFont);
 	DefaultFont = NULL;
 
+	TTF_CloseFont(pixelFont);
+	pixelFont = NULL;
+
 	SDL_DestroyRenderer(renderer);
 	renderer = NULL;
 
@@ -231,12 +398,31 @@ void close() {
 void Render(SDL_Renderer* renderer) {
 	SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
 	SDL_RenderClear(renderer);
-	if (!inGame) {
-		mainMenu->render(renderer, {0,0,0});
-		player1Appear.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player1Appear.getSpriteWidth() / 2, 0);
-		player1Idle.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player1Idle.getSpriteWidth() / 2, 0);
+	SDL_Rect clipRect = SDL_Rect({ 0,100,1000,900 });
+	SDL_Rect clipRect3 = SDL_Rect({ 300,100,700,900 });
+	
+	if (inStartMenu) {
+		startMenu->render(renderer, {0,0,0}, &clipRect);
+		startMenuText->render(renderer, CURRENT_SCREEN_WIDTH / 2 - startMenuText->getWidth() / 2, CURRENT_SCREEN_HEIGHT * 3 / 5);
 	}
-	else {
+	else if (inMainMenu) {
+		player1Appear.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player1Appear.getSpriteWidth() / 2, 0, &clipRect);
+		player1Idle.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player1Idle.getSpriteWidth() / 2, 0, &clipRect);
+		player2Appear.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player1Appear.getSpriteWidth() / 2 + 300, 0, &clipRect3);
+		player2Idle.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player2Idle.getSpriteWidth() / 2 + 300, 0, &clipRect3);
+		DrawMainMenu(renderer);
+	}
+	else if (inOnePlayerSubMenu) {
+		player1Quizical.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player1Appear.getSpriteWidth() / 2, 0, &clipRect);
+		player2Idle.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player2Idle.getSpriteWidth() / 2 + 300, 0, &clipRect3);
+		DrawOnePlayerSubMenu(renderer);
+	}
+	else if (inTwoPlayerSubMenu) {
+		player1Quizical.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player1Appear.getSpriteWidth() / 2, 0, &clipRect);
+		player2Quizical.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player2Idle.getSpriteWidth() / 2 + 300, 0, &clipRect3);
+		DrawTwoPlayerSubMenu(renderer);
+	}
+	else if (inGame) {
 		gameWorld.render(renderer);
 		for (int i = 0; i < pickupGathering.size(); i++) {
 			pickupGathering[i]->render(renderer);
@@ -266,6 +452,14 @@ void Update(Uint32 deltaT) {
 
 	player1Appear.update();
 	player1Idle.update();
+	player2Appear.update();
+	player2Idle.update();
+	player1Quizical.update();
+	player2Quizical.update();
+	//player1Select.update();
+	//player1Unimpressed.update();
+	//player2Select.update();
+	//player2Angry.update();
 
 	if (!menuIsOpen && inGame) {
 		accumulatedTimeForPlayer1 += deltaT;
@@ -413,8 +607,93 @@ int main(int argc, char* args[]) {
 			winLoseText->loadFromRenderedText(renderer, "The game is over!", DefaultFont, { 255,255,255 });
 			score->loadFromRenderedText(renderer, scoreStr.str().c_str(), DefaultFont, {255,255,255});
 
-			mainMenu = new Menu(CURRENT_SCREEN_WIDTH / 2 - mainMenuTexture.getWidth() / 2, 0, CURRENT_SCREEN_WIDTH, CURRENT_SCREEN_HEIGHT);
-			mainMenu->setTexture(&mainMenuTexture);
+			startMenu = new Menu(CURRENT_SCREEN_WIDTH / 2 - mainMenuTexture.getWidth() / 2, 0, CURRENT_SCREEN_WIDTH, CURRENT_SCREEN_HEIGHT);
+			startMenu->setTexture(&mainMenuTexture);
+
+			mainMenu = new Menu(CURRENT_SCREEN_WIDTH * 11 / 40, CURRENT_SCREEN_HEIGHT * 7 / 10, CURRENT_SCREEN_WIDTH * 9 / 20, CURRENT_SCREEN_HEIGHT / 4);
+			mainMenu->setTextDimensions(0.5f, 0.15f);
+			mainMenu->setTextPosition(0.1f, 0.5f);
+			SDL_Point mainMenuButtonPos = mainMenu->getPos();
+			mainMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 100;
+			mainMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5;
+			Button* newButton = new Button("One Player", mainMenuButtonPos, 200, 50);
+			newButton->setLabel1(renderer, "One Player", pixelFont, { 255,255,255 });
+			newButton->setBehavior(OnePlayerSetup);
+			mainMenu->addButton(*newButton);
+			delete newButton;
+			mainMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 98;
+			mainMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5 + 95;
+			newButton = new Button("Two Player", mainMenuButtonPos, 200, 50);
+			newButton->setLabel1(renderer, "Two Player", pixelFont, { 255,255,255 });
+			newButton->setBehavior(TwoPlayerSetup);
+			mainMenu->addButton(*newButton);
+			delete newButton;
+			mainMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 87;
+			mainMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5 + 190;
+			newButton = new Button("Quit Game", mainMenuButtonPos, 200, 50);
+			newButton->setLabel1(renderer, "Quit Game", pixelFont, { 255,255,255 });
+			newButton->setBehavior(QuitGame);
+			mainMenu->addButton(*newButton);
+			delete newButton;
+
+			onePlayerSubMenu = new Menu(CURRENT_SCREEN_WIDTH * 11 / 40, CURRENT_SCREEN_HEIGHT * 7 / 10, CURRENT_SCREEN_WIDTH * 9 / 20, CURRENT_SCREEN_HEIGHT / 4);
+			onePlayerSubMenu->setTextDimensions(0.5f, 0.15f);
+			onePlayerSubMenu->setTextPosition(0.1f, 0.5f);
+			SDL_Point onePlayerSubMenuButtonPos = onePlayerSubMenu->getPos();
+			onePlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 100;
+			onePlayerSubMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5;
+			newButton = new Button("Play One Player", onePlayerSubMenuButtonPos, 200, 50);
+			newButton->setLabel1(renderer, "Play One Player", pixelFont, { 255,255,255 });
+			newButton->setBehavior(OnePlayerStartHuman);
+			onePlayerSubMenu->addButton(*newButton);
+			delete newButton;
+			onePlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 98;
+			onePlayerSubMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5 + 95;
+			newButton = new Button("Let AI Play", onePlayerSubMenuButtonPos, 200, 50);
+			newButton->setLabel1(renderer, "Let AI Play", pixelFont, { 255,255,255 });
+			newButton->setBehavior(OnePlayerStartAI);
+			onePlayerSubMenu->addButton(*newButton);
+			delete newButton;
+			onePlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 87;
+			onePlayerSubMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5 + 190;
+			newButton = new Button("Back", onePlayerSubMenuButtonPos, 200, 50);
+			newButton->setLabel1(renderer, "Back", pixelFont, { 255,255,255 });
+			newButton->setBehavior(BackToMainMenu);
+			onePlayerSubMenu->addButton(*newButton);
+			delete newButton;
+
+			twoPlayerSubMenu = new Menu(CURRENT_SCREEN_WIDTH * 11 / 40, CURRENT_SCREEN_HEIGHT * 7 / 10, CURRENT_SCREEN_WIDTH * 9 / 20, CURRENT_SCREEN_HEIGHT / 4);
+			twoPlayerSubMenu->setTextDimensions(0.5f, 0.15f);
+			twoPlayerSubMenu->setTextPosition(0.1f, 0.5f);
+			SDL_Point twoPlayerSubMenuButtonPos = twoPlayerSubMenu->getPos();
+			twoPlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 100;
+			twoPlayerSubMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5;
+			newButton = new Button("Play as Two Human Players", twoPlayerSubMenuButtonPos, 200, 50);
+			newButton->setLabel1(renderer, "Play as Two Human Players", pixelFont, { 255,255,255 });
+			newButton->setBehavior(TwoPlayerStartHuman);
+			twoPlayerSubMenu->addButton(*newButton);
+			delete newButton;
+			twoPlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 98;
+			twoPlayerSubMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5 + 95;
+			newButton = new Button("Play as One Human and One AI", twoPlayerSubMenuButtonPos, 200, 50);
+			newButton->setLabel1(renderer, "Play as One Human and One AI", pixelFont, { 255,255,255 });
+			newButton->setBehavior(TwoPlayerStartOneAI);
+			twoPlayerSubMenu->addButton(*newButton);
+			delete newButton;
+			twoPlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 98;
+			twoPlayerSubMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5 + 190;
+			newButton = new Button("Watch Two AI Play", twoPlayerSubMenuButtonPos, 200, 50);
+			newButton->setLabel1(renderer, "Watch Two AI Play", pixelFont, { 255,255,255 });
+			newButton->setBehavior(TwoPlayerStartTwoAI);
+			twoPlayerSubMenu->addButton(*newButton);
+			delete newButton;
+			twoPlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 87;
+			twoPlayerSubMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5 + 285;
+			newButton = new Button("Back", twoPlayerSubMenuButtonPos, 200, 50);
+			newButton->setLabel1(renderer, "Back", pixelFont, { 255,255,255 });
+			newButton->setBehavior(BackToMainMenu);
+			twoPlayerSubMenu->addButton(*newButton);
+			delete newButton;
 
 			inGameMenu = new Menu(CURRENT_SCREEN_WIDTH / 2 - 250, CURRENT_SCREEN_HEIGHT / 2 - 250, 500, 500, "");
 			inGameMenu->setTextDimensions(0.7f, 0.12f);
@@ -438,12 +717,55 @@ int main(int argc, char* args[]) {
 			player1Appear.setSpriteDimensions(1000, 1000);
 			player1Appear.setAnimationTime(1200);
 			player1Appear.setNumOfFrames(7);
-			player1Appear.startAnimation();
+			//player1Appear.startAnimation();
 
 			player1Idle.setSpriteDimensions(1000, 1000);
 			player1Idle.setAnimationTime(1800);
 			player1Idle.setNumOfFrames(13);
 			player1Idle.setLooping(true);
+
+			player2Appear.setSpriteDimensions(1000, 1000);
+			player2Appear.setAnimationTime(1500);
+			player2Appear.setNumOfFrames(8);
+			//player2Appear.startAnimation();
+
+			player2Idle.setSpriteDimensions(1000, 1000);
+			player2Idle.setAnimationTime(1800);
+			player2Idle.setNumOfFrames(15);
+			player2Idle.setLooping(true);
+
+			player1Quizical.setSpriteDimensions(1000, 1000);
+			player1Quizical.setAnimationTime(1000);
+			player1Quizical.setNumOfFrames(4);
+			player1Quizical.setLooping(true);
+
+			//player1Select.setSpriteDimensions(1000, 1000);
+			//player1Select.setAnimationTime(1500);
+			//player1Select.setNumOfFrames(8);
+			//player1Select.startAnimation();
+
+			//player1Unimpressed.setSpriteDimensions(1000, 1000);
+			//player1Unimpressed.setAnimationTime(1500);
+			//player1Unimpressed.setNumOfFrames(8);
+			//player1Unimpressed.startAnimation();
+
+			player2Quizical.setSpriteDimensions(1000, 1000);
+			player2Quizical.setAnimationTime(1000);
+			player2Quizical.setNumOfFrames(5);
+			player2Quizical.setLooping(true);
+
+			//player2Select.setSpriteDimensions(1000, 1000);
+			//player2Select.setAnimationTime(1500);
+			//player2Select.setNumOfFrames(8);
+			//player2Select.startAnimation();
+
+			//player2Angry.setSpriteDimensions(1000, 1000);
+			//player2Angry.setAnimationTime(1500);
+			//player2Angry.setNumOfFrames(8);
+			//player2Angry.startAnimation();
+
+			startMenuText->setFlashingText(true);
+			startMenuText->loadFromRenderedText(renderer, "Press Any Key", pixelFont, { 255,255,255 });
 
 			while (runGame) {
 				while (SDL_PollEvent(&e) != 0) {
@@ -459,9 +781,30 @@ int main(int argc, char* args[]) {
 							inGameMenu->handleEvent(&e);
 						else if (e.type == SDL_MOUSEBUTTONDOWN) 
 							inGameMenu->handleEvent(&e);
-
 					}
-					else if (e.type == SDL_KEYDOWN && !menuIsOpen && !aiControlsPlayer1) {
+					else if (inStartMenu && e.type == SDL_KEYDOWN) {
+						inStartMenu = false;
+						inMainMenu = true;
+					}
+					else if (inMainMenu) {
+						if (e.type == SDL_MOUSEMOTION)
+							mainMenu->handleEvent(&e);
+						else if (e.type == SDL_MOUSEBUTTONDOWN)
+							mainMenu->handleEvent(&e);
+					}
+					else if (inOnePlayerSubMenu) {
+						if (e.type == SDL_MOUSEMOTION)
+							onePlayerSubMenu->handleEvent(&e);
+						else if (e.type == SDL_MOUSEBUTTONDOWN)
+							onePlayerSubMenu->handleEvent(&e);
+					}
+					else if (inTwoPlayerSubMenu) {
+						if (e.type == SDL_MOUSEMOTION)
+							twoPlayerSubMenu->handleEvent(&e);
+						else if (e.type == SDL_MOUSEBUTTONDOWN)
+							twoPlayerSubMenu->handleEvent(&e);
+					}
+					else if (inGame && e.type == SDL_KEYDOWN && !menuIsOpen && !aiControlsPlayer1) {
 						switch (e.key.keysym.sym) {
 						case SDLK_a:
 							if (snake.getDirection() != RIGHT) {
@@ -590,8 +933,18 @@ int main(int argc, char* args[]) {
 					Update(deltaT);
 				}
 
-				if (!player1Appear.isPlaying() && !player1Idle.isPlaying())
-					player1Idle.startAnimation();
+				if (inMainMenu) {
+					if (!player1Appear.isPlaying() && !player1Appear.isFinished()) {
+						player1Appear.startAnimation();
+						player2Appear.startAnimation();
+					}
+					if (player1Appear.isFinished() && !player1Idle.isPlaying()) {
+						player1Idle.startAnimation();
+					}
+					if (player2Appear.isFinished() && !player2Idle.isPlaying()) {
+						player2Idle.startAnimation();
+					}
+				}
 
 				if (!window->isMinimized()) {
 					Render(renderer);
@@ -602,6 +955,8 @@ int main(int argc, char* args[]) {
 				if (endGameState) {
 
 				}
+
+				startMenuText->loadFromRenderedText(renderer, "Press Any Key", pixelFont, startMenuText->getTextColor());
 			}
 
 			close();

@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <SDL.h>
+#include <SDL_mixer.h>
 
 #include "texture.h"
 #include "timer.h"
@@ -17,6 +18,7 @@ struct Animation {
 	Animation(Texture* spriteSheet, int width, int height, int frames, Uint32 time, bool loopValue);
 
 	void startAnimation();
+	void stopAnimation();
 
 	void setSprites(Texture* spriteSheet);
 	//void addSprite(Texture* sprite);
@@ -24,20 +26,27 @@ struct Animation {
 	void setSpriteDimensions(int width, int height);
 	void setNumOfFrames(int frames);
 	void setLooping(bool loopValue);
+	void setSoundEffect(Mix_Chunk* soundEff);
 
 	int getSpriteWidth();
 	int getSpriteHeight();
 	int getNumOfFrames();
 	int getTiming();
 	bool isPlaying();
+	bool isFinished();
 
 	bool loadAnimationFromFile(SDL_Renderer* renderer, std::string path);
 
+	void playSoundEffect();
+
 	void update();
-	void render(SDL_Renderer* renderer, int x, int y);
+	//void render(SDL_Renderer* renderer, int x, int y);
+	void render(SDL_Renderer* renderer, int x, int y, SDL_Rect* clip = NULL);
 
 private:
 	Texture* sprites;
+
+	Mix_Chunk* soundEffect;
 
 	Timer timer;
 

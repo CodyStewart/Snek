@@ -2,7 +2,7 @@
 
 bool checkBodyCollisions(Snake snake) {
 	std::vector<Cell>* snakeBody = snake.getBody();
-	Cell snakeHead = (*snakeBody)[0];
+	Cell snakeHead = snakeBody->at(0);
 	for (int secondCellCompared = 1; secondCellCompared < snakeBody->size(); secondCellCompared++) {
 		if (snakeHead.getRect()->x == (*snakeBody)[secondCellCompared].getRect()->x && snakeHead.getRect()->y == (*snakeBody)[secondCellCompared].getRect()->y)
 			return true;
@@ -74,8 +74,7 @@ Snake::Snake(GameWorld* world, playerNum playerNum, std::string snakeName) {
 		wallCollision = false;
 	}
 	else {
-		if (twoPlayerMode)
-			setBody(world, player2);
+		setBody(world, player2);
 		bodyColor = { 255,255,0 };
 		name = snakeName;
 		headTexture = nullptr;

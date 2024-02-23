@@ -49,6 +49,7 @@ public:
 	Button(std::string buttonText, SDL_Point pos, int w, int h);
 
 	TextBox* getLabel();
+	TextTexture* getLabel1();
 	SDL_Rect getRect();
 	SDL_Point getPosition();
 	int getID();
@@ -56,6 +57,8 @@ public:
 	void setHighlighted(bool value);
 	void setID(int id);
 	void setBehavior(void(*func)());
+	void setLabel1(SDL_Renderer* renderer, std::string text, TTF_Font* font, SDL_Color textColor);
+	void setLabel1Color(SDL_Color textColor);
 
 	void handleEvent();
 
@@ -66,6 +69,7 @@ private:
 
 	SDL_Point position;
 	TextBox* label;
+	TextTexture* label1;
 	SDL_Rect box;
 	int id = -1;
 	int width;
@@ -90,7 +94,7 @@ public:
 	void resetTexture();
 
 	void handleEvent(SDL_Event* e);
-	void render(SDL_Renderer* renderer, SDL_Color color);
+	void render(SDL_Renderer* renderer, SDL_Color color, SDL_Rect* clip = NULL);
 
 private:
 	SDL_Point position;

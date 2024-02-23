@@ -109,6 +109,7 @@ void TextBox::render(SDL_Renderer* renderer) {
 Button::Button() {
 	behavior = nullptr;
 	label = nullptr;
+	label1 = nullptr;
 
 	position.x = 0;
 	position.y = 0;
@@ -129,6 +130,7 @@ Button::Button(std::string buttonText, SDL_Point pos, int w, int h) {
 	height = h;
 
 	label = new TextBox(buttonText, DefaultFont, position.x, position.y, width, height);
+	label1 = new TextTexture();
 
 	box.x = position.x - 50;
 	box.y = position.y - 10;
@@ -138,6 +140,10 @@ Button::Button(std::string buttonText, SDL_Point pos, int w, int h) {
 
 TextBox* Button::getLabel() {
 	return label;
+}
+
+TextTexture* Button::getLabel1() {
+	return label1;
 }
 
 SDL_Rect Button::getRect() {
@@ -163,6 +169,14 @@ void Button::setBehavior(void(*func)()) {
 
 void Button::setHighlighted(bool value) {
 	highlighted = value;
+}
+
+void Button::setLabel1(SDL_Renderer* renderer, std::string text, TTF_Font* font, SDL_Color textColor) {
+	label1->loadFromRenderedText(renderer, text, font, textColor);
+}
+
+void Button::setLabel1Color(SDL_Color textColor) {
+
 }
 
 void Button::handleEvent() {
@@ -270,7 +284,7 @@ void Menu::setTextDimensions(float w, float h) {
 	this->resetTexture();
 }
 
-void Menu::render(SDL_Renderer* renderer, SDL_Color color) {
+void Menu::render(SDL_Renderer* renderer, SDL_Color color, SDL_Rect* clip) {
 	SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 0xFF);
 	if (outline != nullptr) {
 		SDL_RenderFillRect(renderer, outline);
@@ -279,7 +293,13 @@ void Menu::render(SDL_Renderer* renderer, SDL_Color color) {
 		SDL_RenderCopy(renderer, textbox->getTexture(), NULL, textbox->getRect());
 	}
 	if (menuTexture != nullptr) {
-		menuTexture->render(renderer, position.x, position.y);
+		/*SDL_Rect renderQuad = { position.x, position.y, width, height };
+
+		if (clip != NULL) {
+			renderQuad.w = clip->w;
+			renderQuad.h = clip->h;
+		}*/
+		menuTexture->render(renderer, position.x, position.y, clip);
 	}
 
 	SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
@@ -306,7 +326,22 @@ void Menu::render(SDL_Renderer* renderer, SDL_Color color) {
 		SDL_RenderDrawLine(renderer, rect.x, rect.y + rect.h, rect.x + rect.w, rect.y + rect.h);
 
 		Button button = buttons[i];
-		if (button.IsHighlighted()) {
+		if (button.getLabel1()->getText() != "") {
+			if (!button.IsHighlighted()) {
+				TextTexture* texTex = button.getLabel1();
+				texTex->loadFromRenderedText(renderer, texTex->getText(), texTex->getFont(), texTex->getTextColor());
+				button.getLabel1()->render(renderer, button.getRect().x, button.getRect().y);
+			}
+			else {
+				TextTexture* texTex = button.getLabel1();
+				SDL_Color currentColor = texTex->getTextColor();
+				SDL_Color highlightColor = { 0x9C, 0x27, 0xB0 };
+				texTex->loadFromRenderedText(renderer, texTex->getText(), texTex->getFont(), highlightColor);
+				button.getLabel1()->render(renderer, button.getRect().x, button.getRect().y);
+				texTex->setTextColor(currentColor);
+			}
+		}
+		else if (button.IsHighlighted()) {
 			SDL_Rect buttonRect = button.getRect();
 			SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
 			SDL_RenderFillRect(renderer, &buttonRect);

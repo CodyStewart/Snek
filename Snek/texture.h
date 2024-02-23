@@ -35,6 +35,17 @@ struct TextTexture : public Texture {
 	TextTexture(SDL_Renderer* renderer, std::string text, TTF_Font* font, SDL_Color color);
 
 	~TextTexture();
+
+	void setFlashingText(bool value);
+	void setFlashingPeriod(int period);
+
+	SDL_Color getTextColor();
+	int getWidth();
+	int getHeight();
+	std::string getText();
+	TTF_Font* getFont();
+
+	void setTextColor(SDL_Color color);
 	
 	bool loadFromRenderedText(SDL_Renderer* renderer, std::string text, TTF_Font* font, SDL_Color textColor);
 
@@ -46,6 +57,9 @@ private:
 	std::string text;
 	SDL_Color textColor;
 	TTF_Font* font;
+
+	bool isFlashing;
+	Uint32 flashTime;
 };
 
 #endif // !TEXTURE_H

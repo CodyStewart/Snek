@@ -55,6 +55,9 @@ TextTexture::TextTexture() {
 	text = "";
 	width = 0;
 	height = 0;
+	
+	isFlashing = false;
+	flashTime = 0;
 }
 
 TextTexture::TextTexture(SDL_Renderer* renderer, std::string tex, TTF_Font* font, SDL_Color color) {
@@ -63,11 +66,35 @@ TextTexture::TextTexture(SDL_Renderer* renderer, std::string tex, TTF_Font* font
 	textColor = color;
 
 	loadFromRenderedText(renderer, text, font, textColor);
+	
+	isFlashing = false;
+	flashTime = 0;
 }
 
 TextTexture::~TextTexture() {
 
 }
+
+void TextTexture::setFlashingText(bool value) {
+	isFlashing = value;
+}
+
+void TextTexture::setFlashingPeriod(int period) {
+	flashTime = (Uint32)period;
+}
+
+void TextTexture::setTextColor(SDL_Color color) {
+	textColor = color;
+}
+
+SDL_Color TextTexture::getTextColor() {
+	return textColor;
+}
+
+int TextTexture::getWidth() { return width; }
+int TextTexture::getHeight() { return height; }
+std::string TextTexture::getText() { return text; }
+TTF_Font* TextTexture::getFont() { return font; }
 
 bool TextTexture::loadFromRenderedText(SDL_Renderer* renderer, std::string tex, TTF_Font* fon, SDL_Color color) {
 	free();
@@ -75,6 +102,27 @@ bool TextTexture::loadFromRenderedText(SDL_Renderer* renderer, std::string tex, 
 	text = tex;
 	textColor = color;
 	font = fon;
+
+	if (isFlashing) {
+		static int flashValue = textColor.a;
+		if (flashValue == 0) {
+			flashValue = 255;
+			textColor.a = flashValue;
+		}
+		else if (flashValue > 2 && flashValue <= 255) {
+			flashValue -= 2;
+			textColor.a = flashValue;
+		}
+		else if (flashValue < 2 && flashValue > -255) {
+			flashValue -= 2;
+			textColor.a = -1 * flashValue;
+		}
+		else {
+			flashValue *= -1;
+			flashValue -= 2;
+			textColor.a = flashValue;
+		}
+	}
 
 	SDL_Surface* surface = TTF_RenderText_Blended(font, text.c_str(), textColor);
 	if (surface == NULL) {
