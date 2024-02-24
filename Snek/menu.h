@@ -59,6 +59,7 @@ public:
 	void setBehavior(void(*func)());
 	void setLabel1(SDL_Renderer* renderer, std::string text, TTF_Font* font, SDL_Color textColor);
 	void setLabel1Color(SDL_Color textColor);
+	void setPos(SDL_Point pos);
 
 	void handleEvent();
 
@@ -85,6 +86,7 @@ public:
 	void addButton(Button button);
 	SDL_Rect* getRect();
 	SDL_Point getPos();
+	Button* getButton(int index);
 
 	void setText(std::string text);
 	void setText(std::string text, TTF_Font* font);

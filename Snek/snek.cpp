@@ -132,12 +132,13 @@ void OnePlayerSetup() {
 }
 
 void OnePlayerStartHuman() {
-	inOnePlayerSubMenu = false;
-	inGame = true;
+	//inOnePlayerSubMenu = false;
+	//inGame = true;
 	aiControlsPlayer1 = false;
 
 	player1Quizical.stopAnimation();
 	player2Idle.stopAnimation();
+	player1Select.startAnimation();
 }
 
 void OnePlayerStartAI() {
@@ -147,6 +148,7 @@ void OnePlayerStartAI() {
 
 	player1Quizical.stopAnimation();
 	player2Idle.stopAnimation();
+	player1Select.startAnimation();
 }
 
 void BackToMainMenu() {
@@ -415,7 +417,9 @@ void Render(SDL_Renderer* renderer) {
 	else if (inOnePlayerSubMenu) {
 		player1Quizical.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player1Appear.getSpriteWidth() / 2, 0, &clipRect);
 		player2Idle.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player2Idle.getSpriteWidth() / 2 + 300, 0, &clipRect3);
-		DrawOnePlayerSubMenu(renderer);
+		player1Select.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player1Select.getSpriteWidth() / 2, 0, &clipRect);
+		if (!player1Select.isPlaying())
+			DrawOnePlayerSubMenu(renderer);
 	}
 	else if (inTwoPlayerSubMenu) {
 		player1Quizical.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player1Appear.getSpriteWidth() / 2, 0, &clipRect);
@@ -456,7 +460,7 @@ void Update(Uint32 deltaT) {
 	player2Idle.update();
 	player1Quizical.update();
 	player2Quizical.update();
-	//player1Select.update();
+	player1Select.update();
 	//player1Unimpressed.update();
 	//player2Select.update();
 	//player2Angry.update();
@@ -614,24 +618,33 @@ int main(int argc, char* args[]) {
 			mainMenu->setTextDimensions(0.5f, 0.15f);
 			mainMenu->setTextPosition(0.1f, 0.5f);
 			SDL_Point mainMenuButtonPos = mainMenu->getPos();
-			mainMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 100;
+			mainMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 ;
 			mainMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5;
 			Button* newButton = new Button("One Player", mainMenuButtonPos, 200, 50);
 			newButton->setLabel1(renderer, "One Player", pixelFont, { 255,255,255 });
+			int buttonTextWidth = newButton->getLabel1()->getWidth();
+			mainMenuButtonPos.x -= buttonTextWidth / 2;
+			newButton->setPos(mainMenuButtonPos);
 			newButton->setBehavior(OnePlayerSetup);
 			mainMenu->addButton(*newButton);
 			delete newButton;
-			mainMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 98;
+			mainMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2;
 			mainMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5 + 95;
 			newButton = new Button("Two Player", mainMenuButtonPos, 200, 50);
 			newButton->setLabel1(renderer, "Two Player", pixelFont, { 255,255,255 });
+			buttonTextWidth = newButton->getLabel1()->getWidth();
+			mainMenuButtonPos.x -= buttonTextWidth / 2;
+			newButton->setPos(mainMenuButtonPos);
 			newButton->setBehavior(TwoPlayerSetup);
 			mainMenu->addButton(*newButton);
 			delete newButton;
-			mainMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 87;
+			mainMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2;
 			mainMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5 + 190;
 			newButton = new Button("Quit Game", mainMenuButtonPos, 200, 50);
 			newButton->setLabel1(renderer, "Quit Game", pixelFont, { 255,255,255 });
+			buttonTextWidth = newButton->getLabel1()->getWidth();
+			mainMenuButtonPos.x -= buttonTextWidth / 2;
+			newButton->setPos(mainMenuButtonPos);
 			newButton->setBehavior(QuitGame);
 			mainMenu->addButton(*newButton);
 			delete newButton;
@@ -640,24 +653,33 @@ int main(int argc, char* args[]) {
 			onePlayerSubMenu->setTextDimensions(0.5f, 0.15f);
 			onePlayerSubMenu->setTextPosition(0.1f, 0.5f);
 			SDL_Point onePlayerSubMenuButtonPos = onePlayerSubMenu->getPos();
-			onePlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 100;
+			onePlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2;
 			onePlayerSubMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5;
 			newButton = new Button("Play One Player", onePlayerSubMenuButtonPos, 200, 50);
 			newButton->setLabel1(renderer, "Play One Player", pixelFont, { 255,255,255 });
+			buttonTextWidth = newButton->getLabel1()->getWidth();
+			onePlayerSubMenuButtonPos.x -= buttonTextWidth / 2;
+			newButton->setPos(onePlayerSubMenuButtonPos);
 			newButton->setBehavior(OnePlayerStartHuman);
 			onePlayerSubMenu->addButton(*newButton);
 			delete newButton;
-			onePlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 98;
+			onePlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2;
 			onePlayerSubMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5 + 95;
 			newButton = new Button("Let AI Play", onePlayerSubMenuButtonPos, 200, 50);
 			newButton->setLabel1(renderer, "Let AI Play", pixelFont, { 255,255,255 });
+			buttonTextWidth = newButton->getLabel1()->getWidth();
+			onePlayerSubMenuButtonPos.x -= buttonTextWidth / 2;
+			newButton->setPos(onePlayerSubMenuButtonPos);
 			newButton->setBehavior(OnePlayerStartAI);
 			onePlayerSubMenu->addButton(*newButton);
 			delete newButton;
-			onePlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 87;
+			onePlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2;
 			onePlayerSubMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5 + 190;
 			newButton = new Button("Back", onePlayerSubMenuButtonPos, 200, 50);
 			newButton->setLabel1(renderer, "Back", pixelFont, { 255,255,255 });
+			buttonTextWidth = newButton->getLabel1()->getWidth();
+			onePlayerSubMenuButtonPos.x -= buttonTextWidth / 2;
+			newButton->setPos(onePlayerSubMenuButtonPos);
 			newButton->setBehavior(BackToMainMenu);
 			onePlayerSubMenu->addButton(*newButton);
 			delete newButton;
@@ -666,31 +688,43 @@ int main(int argc, char* args[]) {
 			twoPlayerSubMenu->setTextDimensions(0.5f, 0.15f);
 			twoPlayerSubMenu->setTextPosition(0.1f, 0.5f);
 			SDL_Point twoPlayerSubMenuButtonPos = twoPlayerSubMenu->getPos();
-			twoPlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 100;
+			twoPlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2;
 			twoPlayerSubMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5;
 			newButton = new Button("Play as Two Human Players", twoPlayerSubMenuButtonPos, 200, 50);
 			newButton->setLabel1(renderer, "Play as Two Human Players", pixelFont, { 255,255,255 });
+			buttonTextWidth = newButton->getLabel1()->getWidth();
+			twoPlayerSubMenuButtonPos.x -= buttonTextWidth / 2;
+			newButton->setPos(twoPlayerSubMenuButtonPos);
 			newButton->setBehavior(TwoPlayerStartHuman);
 			twoPlayerSubMenu->addButton(*newButton);
 			delete newButton;
-			twoPlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 98;
+			twoPlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2;
 			twoPlayerSubMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5 + 95;
 			newButton = new Button("Play as One Human and One AI", twoPlayerSubMenuButtonPos, 200, 50);
 			newButton->setLabel1(renderer, "Play as One Human and One AI", pixelFont, { 255,255,255 });
+			buttonTextWidth = newButton->getLabel1()->getWidth();
+			twoPlayerSubMenuButtonPos.x -= buttonTextWidth / 2;
+			newButton->setPos(twoPlayerSubMenuButtonPos);
 			newButton->setBehavior(TwoPlayerStartOneAI);
 			twoPlayerSubMenu->addButton(*newButton);
 			delete newButton;
-			twoPlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 98;
+			twoPlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2;
 			twoPlayerSubMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5 + 190;
 			newButton = new Button("Watch Two AI Play", twoPlayerSubMenuButtonPos, 200, 50);
 			newButton->setLabel1(renderer, "Watch Two AI Play", pixelFont, { 255,255,255 });
+			buttonTextWidth = newButton->getLabel1()->getWidth();
+			twoPlayerSubMenuButtonPos.x -= buttonTextWidth / 2;
+			newButton->setPos(twoPlayerSubMenuButtonPos);
 			newButton->setBehavior(TwoPlayerStartTwoAI);
 			twoPlayerSubMenu->addButton(*newButton);
 			delete newButton;
-			twoPlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2 - 87;
+			twoPlayerSubMenuButtonPos.x = CURRENT_SCREEN_WIDTH / 2;
 			twoPlayerSubMenuButtonPos.y = CURRENT_SCREEN_HEIGHT * 3 / 5 + 285;
 			newButton = new Button("Back", twoPlayerSubMenuButtonPos, 200, 50);
 			newButton->setLabel1(renderer, "Back", pixelFont, { 255,255,255 });
+			buttonTextWidth = newButton->getLabel1()->getWidth();
+			twoPlayerSubMenuButtonPos.x -= buttonTextWidth / 2;
+			newButton->setPos(twoPlayerSubMenuButtonPos);
 			newButton->setBehavior(BackToMainMenu);
 			twoPlayerSubMenu->addButton(*newButton);
 			delete newButton;
@@ -739,10 +773,9 @@ int main(int argc, char* args[]) {
 			player1Quizical.setNumOfFrames(4);
 			player1Quizical.setLooping(true);
 
-			//player1Select.setSpriteDimensions(1000, 1000);
-			//player1Select.setAnimationTime(1500);
-			//player1Select.setNumOfFrames(8);
-			//player1Select.startAnimation();
+			player1Select.setSpriteDimensions(1000, 1000);
+			player1Select.setAnimationTime(1500);
+			player1Select.setNumOfFrames(8);
 
 			//player1Unimpressed.setSpriteDimensions(1000, 1000);
 			//player1Unimpressed.setAnimationTime(1500);
@@ -944,6 +977,11 @@ int main(int argc, char* args[]) {
 					if (player2Appear.isFinished() && !player2Idle.isPlaying()) {
 						player2Idle.startAnimation();
 					}
+				}
+
+				if (inOnePlayerSubMenu && player1Select.isFinished()) {
+					inOnePlayerSubMenu = false;
+					inGame = true;
 				}
 
 				if (!window->isMinimized()) {

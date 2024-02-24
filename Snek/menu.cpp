@@ -179,6 +179,12 @@ void Button::setLabel1Color(SDL_Color textColor) {
 
 }
 
+void Button::setPos(SDL_Point pos) {
+	position = pos;
+	box.x = pos.x;
+	box.y = pos.y;
+}
+
 void Button::handleEvent() {
 	behavior();
 }
@@ -230,6 +236,10 @@ SDL_Rect* Menu::getRect() {
 
 SDL_Point Menu::getPos() {
 	return position;
+}
+
+Button* Menu::getButton(int index) {
+	return &buttons[index];
 }
 
 void Menu::setText(std::string text) {
