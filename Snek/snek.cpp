@@ -51,6 +51,7 @@ bool aiControlsPlayer1 = false;
 bool aiControlsPlayer2 = false;
 bool windowResized = false;
 bool runGame = true;
+bool beginGame = false;
 uint gameScore = 0;
 
 GameWorld gameWorld = GameWorld(UNIT_DISTANCE, NUMOFROWS, NUMOFCOLS);
@@ -93,6 +94,116 @@ Animation player2Angry = Animation();
 Mix_Music* music;
 Mix_Chunk* player1Sound;
 Mix_Chunk* player2Sound;
+
+void player1FallingAnimation(Snake* snek) {
+	uint timeOfAnimation = 2000;
+	static int numOfTimesCalled = 1;
+	int pixelSize = 0;
+
+	Cell* snakeHead = snek->getHead();
+	SDL_Rect* headRect = snakeHead->getRect();
+	static int zoomFactor = 2 * headRect->w;
+	pixelSize = zoomFactor;
+	SDL_Rect temRect;
+	temRect.x = headRect->x;
+	temRect.y = headRect->y;
+	temRect.w = headRect->w;
+	temRect.h = headRect->h;
+
+	temRect.w = zoomFactor;
+	temRect.h = zoomFactor;
+	temRect.x -= (temRect.w - headRect->w) / 2;
+	temRect.y -= (temRect.h - headRect->h) / 2;
+
+	std::vector<Cell>* snakeBody = snek->getBody();
+	SDL_Color snakeColor = snek->getColor();
+	SDL_Color snakeHeadColor = snek->getHead()->getColor();
+
+	SDL_SetRenderDrawColor(renderer, snakeHeadColor.r, snakeHeadColor.g, snakeHeadColor.b, 0xFF);
+	SDL_RenderFillRect(renderer, &temRect);
+
+	SDL_SetRenderDrawColor(renderer, snakeColor.r, snakeColor.g, snakeColor.b, 0xFF);
+
+
+ 	for (uint i = 1; i < snakeBody->size(); i++) {
+		//body[i].render(renderer);
+		SDL_Rect* snakeRect = snakeBody->at(i).getRect();
+		SDL_Rect tempRect;
+		tempRect.x = snakeRect->x;
+		tempRect.y = snakeRect->y;
+		tempRect.w = snakeRect->w;
+		tempRect.h = snakeRect->h;
+
+		tempRect.w = zoomFactor;
+		tempRect.h = zoomFactor;
+		tempRect.x = temRect.x;
+		tempRect.y = temRect.y + (temRect.h * i);
+		SDL_RenderFillRect(renderer, &tempRect);
+	}
+
+	zoomFactor -= 1 * (numOfTimesCalled / 10);
+	numOfTimesCalled++;
+	if (numOfTimesCalled > 10)
+		numOfTimesCalled = 0;
+
+	if (zoomFactor <= snakeHead->getRect()->w)
+		beginGame = true;
+}
+
+void player2FallingAnimation(Snake* snek) {
+	uint timeOfAnimation = 2000;
+	static int numOfTimesCalled = 1;
+	int pixelSize = 0;
+
+	Cell* snakeHead = snek->getHead();
+	SDL_Rect* headRect = snakeHead->getRect();
+	static int zoomFactor = 2 * headRect->w;
+	pixelSize = zoomFactor;
+	SDL_Rect temRect;
+	temRect.x = headRect->x;
+	temRect.y = headRect->y;
+	temRect.w = headRect->w;
+	temRect.h = headRect->h;
+
+	temRect.w = zoomFactor;
+	temRect.h = zoomFactor;
+	temRect.x -= (temRect.w - headRect->w) / 2;
+	temRect.y -= (temRect.h - headRect->h) / 2;
+
+	std::vector<Cell>* snakeBody = snek->getBody();
+	SDL_Color snakeColor = snek->getColor();
+	SDL_Color snakeHeadColor = snek->getHead()->getColor();
+
+	SDL_SetRenderDrawColor(renderer, snakeHeadColor.r, snakeHeadColor.g, snakeHeadColor.b, 0xFF);
+	SDL_RenderFillRect(renderer, &temRect);
+
+	SDL_SetRenderDrawColor(renderer, snakeColor.r, snakeColor.g, snakeColor.b, 0xFF);
+
+
+	for (uint i = 1; i < snakeBody->size(); i++) {
+		//body[i].render(renderer);
+		SDL_Rect* snakeRect = snakeBody->at(i).getRect();
+		SDL_Rect tempRect;
+		tempRect.x = snakeRect->x;
+		tempRect.y = snakeRect->y;
+		tempRect.w = snakeRect->w;
+		tempRect.h = snakeRect->h;
+
+		tempRect.w = zoomFactor;
+		tempRect.h = zoomFactor;
+		tempRect.x = temRect.x + (temRect.w * i);
+		tempRect.y = temRect.y;
+		SDL_RenderFillRect(renderer, &tempRect);
+	}
+
+	zoomFactor -= 1 * (numOfTimesCalled / 10);
+	numOfTimesCalled++;
+	if (numOfTimesCalled > 10)
+		numOfTimesCalled = 0;
+
+	if (zoomFactor <= snakeHead->getRect()->w)
+		beginGame = true;
+}
 
 void restartGame() {
 	gameScore = 0;
@@ -171,13 +282,15 @@ void TwoPlayerSetup() {
 }
 
 void TwoPlayerStartHuman() {
-	twoPlayerMode = true;
-	inTwoPlayerSubMenu = false;
-	inGame = true;
+	//twoPlayerMode = true;
+	//inTwoPlayerSubMenu = false;
+	//inGame = true;
 	aiControlsPlayer1 = false;
 
 	player1Quizical.stopAnimation();
 	player2Quizical.stopAnimation();
+	player1Select.startAnimation();
+	player2Select.startAnimation();
 }
 
 void TwoPlayerStartOneAI() {
@@ -424,24 +537,39 @@ void Render(SDL_Renderer* renderer) {
 	else if (inTwoPlayerSubMenu) {
 		player1Quizical.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player1Appear.getSpriteWidth() / 2, 0, &clipRect);
 		player2Quizical.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player2Idle.getSpriteWidth() / 2 + 300, 0, &clipRect3);
-		DrawTwoPlayerSubMenu(renderer);
+		player1Select.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player1Select.getSpriteWidth() / 2, 0, &clipRect);
+		player2Select.render(renderer, CURRENT_SCREEN_WIDTH / 2 - player2Select.getSpriteWidth() / 2 + 300, 0, &clipRect3);
+		if (!player2Select.isPlaying())
+			DrawTwoPlayerSubMenu(renderer);
 	}
 	else if (inGame) {
-		gameWorld.render(renderer);
-		for (int i = 0; i < pickupGathering.size(); i++) {
-			pickupGathering[i]->render(renderer);
+		if (beginGame) {
+			gameWorld.render(renderer);
+			for (int i = 0; i < pickupGathering.size(); i++) {
+				pickupGathering[i]->render(renderer);
+			}
+			if (twoPlayerMode)
+				rival.render(renderer);
+			snake.render(renderer);
+			tb->render(renderer, 0, 120, NULL);
+			score->render(renderer, CURRENT_SCREEN_WIDTH - 250, 0);
+			player1SpeedText->render(renderer, 0, 0);
+			if (twoPlayerMode)
+				player2SpeedText->render(renderer, 0, 40);
+			pickupGenerationSpeedText->render(renderer, 0, 80);
+			if (endGameState)
+				winLoseText->render(renderer, CURRENT_SCREEN_WIDTH / 2, CURRENT_SCREEN_HEIGHT / 2);
 		}
-		if (twoPlayerMode)
-			rival.render(renderer);
-		snake.render(renderer);
-		tb->render(renderer, 0, 120, NULL);
-		score->render(renderer, CURRENT_SCREEN_WIDTH - 250, 0);
-		player1SpeedText->render(renderer, 0, 0);
-		if (twoPlayerMode)
-			player2SpeedText->render(renderer, 0, 40);
-		pickupGenerationSpeedText->render(renderer, 0, 80);
-		if (endGameState)
-			winLoseText->render(renderer, CURRENT_SCREEN_WIDTH / 2, CURRENT_SCREEN_HEIGHT / 2);
+		else {
+			if (!twoPlayerMode) {
+				player1FallingAnimation(&snake);
+			}
+			else {
+				player1FallingAnimation(&snake);
+				player2FallingAnimation(&rival);
+			}
+			gameWorld.render(renderer);
+		}
 	}
 	if (menuIsOpen) {
 		inGameMenu->render(renderer, {255,255,255});
@@ -461,11 +589,11 @@ void Update(Uint32 deltaT) {
 	player1Quizical.update();
 	player2Quizical.update();
 	player1Select.update();
+	player2Select.update();
 	//player1Unimpressed.update();
-	//player2Select.update();
 	//player2Angry.update();
 
-	if (!menuIsOpen && inGame) {
+	if (!menuIsOpen && inGame && beginGame) {
 		accumulatedTimeForPlayer1 += deltaT;
 		accumulatedTimeForPlayer2 += deltaT;
 		snake.move(accumulatedTimeForPlayer1, &gameWorld);
@@ -751,7 +879,6 @@ int main(int argc, char* args[]) {
 			player1Appear.setSpriteDimensions(1000, 1000);
 			player1Appear.setAnimationTime(1200);
 			player1Appear.setNumOfFrames(7);
-			//player1Appear.startAnimation();
 
 			player1Idle.setSpriteDimensions(1000, 1000);
 			player1Idle.setAnimationTime(1800);
@@ -761,7 +888,6 @@ int main(int argc, char* args[]) {
 			player2Appear.setSpriteDimensions(1000, 1000);
 			player2Appear.setAnimationTime(1500);
 			player2Appear.setNumOfFrames(8);
-			//player2Appear.startAnimation();
 
 			player2Idle.setSpriteDimensions(1000, 1000);
 			player2Idle.setAnimationTime(1800);
@@ -777,6 +903,10 @@ int main(int argc, char* args[]) {
 			player1Select.setAnimationTime(1500);
 			player1Select.setNumOfFrames(8);
 
+			player2Select.setSpriteDimensions(1000, 1000);
+			player2Select.setAnimationTime(2000);
+			player2Select.setNumOfFrames(11);
+
 			//player1Unimpressed.setSpriteDimensions(1000, 1000);
 			//player1Unimpressed.setAnimationTime(1500);
 			//player1Unimpressed.setNumOfFrames(8);
@@ -786,11 +916,6 @@ int main(int argc, char* args[]) {
 			player2Quizical.setAnimationTime(1000);
 			player2Quizical.setNumOfFrames(5);
 			player2Quizical.setLooping(true);
-
-			//player2Select.setSpriteDimensions(1000, 1000);
-			//player2Select.setAnimationTime(1500);
-			//player2Select.setNumOfFrames(8);
-			//player2Select.startAnimation();
 
 			//player2Angry.setSpriteDimensions(1000, 1000);
 			//player2Angry.setAnimationTime(1500);
@@ -981,6 +1106,12 @@ int main(int argc, char* args[]) {
 
 				if (inOnePlayerSubMenu && player1Select.isFinished()) {
 					inOnePlayerSubMenu = false;
+					inGame = true;
+				}
+
+				if (inTwoPlayerSubMenu && player2Select.isFinished()) {
+					inTwoPlayerSubMenu = false;
+					twoPlayerMode = true;
 					inGame = true;
 				}
 

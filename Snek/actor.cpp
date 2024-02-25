@@ -394,7 +394,9 @@ void Snake::setWallCollision(bool collidedWithWall) {
 	wallCollision = collidedWithWall;
 }
 
+Cell* Snake::getHead() { return &head; }
 std::vector<Cell>* Snake::getBody() { return &body; }
+SDL_Color Snake::getColor() { return bodyColor; }
 
 SDL_Point Snake::getHeadPosition() {
 	SDL_Rect* headRect = head.getRect();

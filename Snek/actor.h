@@ -45,7 +45,9 @@ struct Snake {
 	void increaseSpeed(uint inc);
 	void setWallCollision(bool collidedWithWall);
 
+	Cell* getHead();
 	std::vector<Cell>* getBody();
+	SDL_Color getColor();
 	SDL_Point getHeadPosition();
 	GridPosition getGridPosition(); // position in the grid of the head (row, col)
 	Direction getDirection();
