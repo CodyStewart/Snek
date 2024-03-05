@@ -5,7 +5,7 @@ Uint32 getPickupGenerationTime(GameWorld* world) {
 	Uint32 generationTime = 0;
 
 	if (world->getTimeSinceStartOfProgram() < 10000)
-		return 5000;
+		return 3000;
 	else if (world->getTimeSinceStartOfProgram() < 25000)
 		return 4000;
 	else if (world->getTimeSinceStartOfProgram() < 40000)
@@ -18,6 +18,8 @@ Cell::Cell() {
 	cellTexture = nullptr;
 	cellColor = { 255,255,255 };
 	cellBlock = {};
+
+	cellGridPosition = { 0,0 };
 
 	width = length = 0;
 	occupied = false;
@@ -50,12 +52,17 @@ void Cell::setOccupied(bool isOccupied) {
 	occupied = isOccupied;
 }
 
+void Cell::setGridPosition(int row, int col) {
+	cellGridPosition = { row, col };
+}
+
 Texture* Cell::getTexture() { return cellTexture; }
 SDL_Color Cell::getColor() { return cellColor; }
 SDL_Rect* Cell::getRect() { return &cellBlock; }
 int Cell::getWidth() { return width; }
 int Cell::getLength() { return length; }
 bool Cell::getOccupied() { return occupied; }
+GridPosition Cell::getGridPosition() { return cellGridPosition; }
 
 GameWorld::GameWorld(int unitDist, const int numRows, const int numCols) {
 	unitDistance = unitDist;
@@ -71,6 +78,7 @@ GameWorld::GameWorld(int unitDist, const int numRows, const int numCols) {
 		for (int col = 0; col < numOfCols; col++) {
 			grid[row][col].setPosition(col * unitDistance + XOffset, row * unitDistance + paddingY);
 			grid[row][col].setDimensions(unitDistance);
+			grid[row][col].setGridPosition(row, col);
 		}
 	}
 }
@@ -133,6 +141,17 @@ void GameWorld::resizeGameWorld(int newSize) {
 	}
 }
 
+void GameWorld::reset() {
+	timeSinceStartOfProgram.start();
+
+	for (int row = 0; row < numOfRows; row++) {
+		for (int col = 0; col < numOfCols; col++) {
+			// resize each cell
+			grid[row][col].setOccupied(false);
+		}
+	}
+}
+
 GridPosition GameWorld::convertCoordsToRowCol(int x, int y) {
 	GridPosition gp;
 	gp.column = 0;
@@ -146,6 +165,14 @@ GridPosition GameWorld::convertCoordsToRowCol(int x, int y) {
 	gp.row = rowNum;
 
 	return gp;
+}
+
+int GameWorld::getNumOfRows() {
+	return numOfRows;
+}
+
+int GameWorld::getNumOfCols() {
+	return numOfRows;
 }
 
 Cell* GameWorld::getGrid() {

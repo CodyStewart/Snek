@@ -23,6 +23,7 @@ public:
 
 	SDL_Color getTextColor();
 	SDL_Rect* getRect();
+	std::string getText();
 	SDL_Texture* getTexture();
 
 	void resetTexture();
@@ -48,6 +49,7 @@ public:
 	Button(std::string buttonText, SDL_Point pos, int w, int h);
 
 	TextBox* getLabel();
+	TextTexture* getLabel1();
 	SDL_Rect getRect();
 	SDL_Point getPosition();
 	int getID();
@@ -55,6 +57,9 @@ public:
 	void setHighlighted(bool value);
 	void setID(int id);
 	void setBehavior(void(*func)());
+	void setLabel1(SDL_Renderer* renderer, std::string text, TTF_Font* font, SDL_Color textColor);
+	void setLabel1Color(SDL_Color textColor);
+	void setPos(SDL_Point pos);
 
 	void handleEvent();
 
@@ -65,6 +70,7 @@ private:
 
 	SDL_Point position;
 	TextBox* label;
+	TextTexture* label1;
 	SDL_Rect box;
 	int id = -1;
 	int width;
@@ -75,23 +81,26 @@ private:
 class Menu {
 public:
 	Menu();
-	Menu(int x, int y, int width, int height, std::string text);
+	Menu(int x, int y, int width, int height, std::string text = "");
 
 	void addButton(Button button);
 	SDL_Rect* getRect();
 	SDL_Point getPos();
+	Button* getButton(int index);
 
 	void setText(std::string text);
 	void setText(std::string text, TTF_Font* font);
 	void setTextPosition(float x, float y);
 	void setTextDimensions(float w, float h);
+	void setTexture(Texture* menuTexture);
 	void resetTexture();
 
 	void handleEvent(SDL_Event* e);
-	void render(SDL_Renderer* renderer);
+	void render(SDL_Renderer* renderer, SDL_Color color, SDL_Rect* clip = NULL);
 
 private:
 	SDL_Point position;
+	Texture* menuTexture;
 	TextBox* textbox;
 	SDL_Rect* outline;
 	std::vector<Button> buttons;

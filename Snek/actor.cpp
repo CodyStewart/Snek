@@ -2,7 +2,7 @@
 
 bool checkBodyCollisions(Snake snake) {
 	std::vector<Cell>* snakeBody = snake.getBody();
-	Cell snakeHead = (*snakeBody)[0];
+	Cell snakeHead = snakeBody->at(0);
 	for (int secondCellCompared = 1; secondCellCompared < snakeBody->size(); secondCellCompared++) {
 		if (snakeHead.getRect()->x == (*snakeBody)[secondCellCompared].getRect()->x && snakeHead.getRect()->y == (*snakeBody)[secondCellCompared].getRect()->y)
 			return true;
@@ -65,26 +65,27 @@ Snake::Snake(GameWorld* world, playerNum playerNum, std::string snakeName) {
 		setBody(world);
 		bodyColor = { 0, 0, 255 };
 		name = snakeName;
-		headTexture = nullptr;
+		spriteSheet = nullptr;
 		headPosition = getHeadPosition();
 		speed = 5;
 		bodyLength = (uint)body.size();
 		direction = UP;
 		desiredDirection = UP;
 		wallCollision = false;
+		flipMode = 0;
 	}
 	else {
-		if (twoPlayerMode)
-			setBody(world, player2);
+		setBody(world, player2);
 		bodyColor = { 255,255,0 };
 		name = snakeName;
-		headTexture = nullptr;
+		spriteSheet = nullptr;
 		headPosition = getHeadPosition();
 		speed = 5;
 		bodyLength = (uint)body.size();
 		direction = LEFT;
 		desiredDirection = LEFT;
 		wallCollision = false;
+		flipMode = 0;
 	}
 }
 
@@ -101,6 +102,7 @@ void Snake::move(Uint32 &accumulatedTime, GameWorld* gameWorld) {
 void Snake::moveByOne(GameWorld* gameWorld) {
 	// move the snake one space based on direction
 	Cell tempBodyCell;
+	Cell thisBodyCell;
 
 	switch (desiredDirection)
 	{
@@ -115,6 +117,18 @@ void Snake::moveByOne(GameWorld* gameWorld) {
 				// work backwards from the tail and update the positions of the body
 				for (size_t bodyIndex = body.size() - 1; bodyIndex > 0; bodyIndex--) {
 					tempBodyCell = body[bodyIndex - 1];
+					thisBodyCell = body[bodyIndex];
+					GridPosition nextCellGP = tempBodyCell.getGridPosition();
+					GridPosition thisCellGP = thisBodyCell.getGridPosition();
+					if (nextCellGP.column > thisCellGP.column) // the next cell is to the right, update grid position column up one
+						body[bodyIndex].setGridPosition(thisCellGP.row, thisCellGP.column + 1);
+					else if (nextCellGP.column < thisCellGP.column)
+						body[bodyIndex].setGridPosition(thisCellGP.row, thisCellGP.column - 1);
+					else if (nextCellGP.row > thisCellGP.row)
+						body[bodyIndex].setGridPosition(thisCellGP.row + 1, thisCellGP.column);
+					else
+						body[bodyIndex].setGridPosition(thisCellGP.row - 1, thisCellGP.column);
+
 					body[bodyIndex].setPosition(tempBodyCell.getRect()->x, tempBodyCell.getRect()->y);
 				}
 
@@ -124,6 +138,8 @@ void Snake::moveByOne(GameWorld* gameWorld) {
 				body[0].setPosition(head.getRect()->x, head.getRect()->y);
 
 				// move the grid position up one
+				GridPosition headGP = body[0].getGridPosition();
+				body[0].setGridPosition(headGP.row - 1, headGP.column);
 				gridPosition.row -= 1;
 
 				direction = UP;
@@ -143,6 +159,18 @@ void Snake::moveByOne(GameWorld* gameWorld) {
 				// work backwards from the tail and update the positions of the body
 				for (size_t bodyIndex = body.size() - 1; bodyIndex > 0; bodyIndex--) {
 					tempBodyCell = body[bodyIndex - 1];
+					thisBodyCell = body[bodyIndex];
+					GridPosition nextCellGP = tempBodyCell.getGridPosition();
+					GridPosition thisCellGP = thisBodyCell.getGridPosition();
+					if (nextCellGP.column > thisCellGP.column) // the next cell is to the right, update grid position column up one
+						body[bodyIndex].setGridPosition(thisCellGP.row, thisCellGP.column + 1);
+					else if (nextCellGP.column < thisCellGP.column)
+						body[bodyIndex].setGridPosition(thisCellGP.row, thisCellGP.column - 1);
+					else if (nextCellGP.row > thisCellGP.row)
+						body[bodyIndex].setGridPosition(thisCellGP.row + 1, thisCellGP.column);
+					else
+						body[bodyIndex].setGridPosition(thisCellGP.row - 1, thisCellGP.column);
+
 					body[bodyIndex].setPosition(tempBodyCell.getRect()->x, tempBodyCell.getRect()->y);
 				}
 
@@ -152,6 +180,8 @@ void Snake::moveByOne(GameWorld* gameWorld) {
 				body[0].setPosition(head.getRect()->x, head.getRect()->y);
 
 				// move the grid position down one
+				GridPosition headGP = body[0].getGridPosition();
+				body[0].setGridPosition(headGP.row + 1, headGP.column);
 				gridPosition.row += 1;
 
 				direction = DOWN;
@@ -171,6 +201,18 @@ void Snake::moveByOne(GameWorld* gameWorld) {
 				// work backwards from the tail and update the positions of the body
 				for (size_t bodyIndex = body.size() - 1; bodyIndex > 0; bodyIndex--) {
 					tempBodyCell = body[bodyIndex - 1];
+					thisBodyCell = body[bodyIndex];
+					GridPosition nextCellGP = tempBodyCell.getGridPosition();
+					GridPosition thisCellGP = thisBodyCell.getGridPosition();
+					if (nextCellGP.column > thisCellGP.column) // the next cell is to the right, update grid position column up one
+						body[bodyIndex].setGridPosition(thisCellGP.row, thisCellGP.column + 1);
+					else if (nextCellGP.column < thisCellGP.column)
+						body[bodyIndex].setGridPosition(thisCellGP.row, thisCellGP.column - 1);
+					else if (nextCellGP.row > thisCellGP.row)
+						body[bodyIndex].setGridPosition(thisCellGP.row + 1, thisCellGP.column);
+					else
+						body[bodyIndex].setGridPosition(thisCellGP.row - 1, thisCellGP.column);
+
 					body[bodyIndex].setPosition(tempBodyCell.getRect()->x, tempBodyCell.getRect()->y);
 				}
 
@@ -180,6 +222,8 @@ void Snake::moveByOne(GameWorld* gameWorld) {
 				body[0].setPosition(head.getRect()->x, head.getRect()->y);
 
 				// move the grid position left one
+				GridPosition headGP = body[0].getGridPosition();
+				body[0].setGridPosition(headGP.row, headGP.column - 1);
 				gridPosition.column -= 1;
 
 				direction = LEFT;
@@ -199,6 +243,18 @@ void Snake::moveByOne(GameWorld* gameWorld) {
 				// work backwards from the tail and update the positions of the body
 				for (size_t bodyIndex = body.size() - 1; bodyIndex > 0; bodyIndex--) {
 					tempBodyCell = body[bodyIndex - 1];
+					thisBodyCell = body[bodyIndex];
+					GridPosition nextCellGP = tempBodyCell.getGridPosition();
+					GridPosition thisCellGP = thisBodyCell.getGridPosition();
+					if (nextCellGP.column > thisCellGP.column) // the next cell is to the right, update grid position column up one
+						body[bodyIndex].setGridPosition(thisCellGP.row, thisCellGP.column + 1);
+					else if (nextCellGP.column < thisCellGP.column)
+						body[bodyIndex].setGridPosition(thisCellGP.row, thisCellGP.column - 1);
+					else if (nextCellGP.row > thisCellGP.row)
+						body[bodyIndex].setGridPosition(thisCellGP.row + 1, thisCellGP.column);
+					else
+						body[bodyIndex].setGridPosition(thisCellGP.row - 1, thisCellGP.column);
+
 					body[bodyIndex].setPosition(tempBodyCell.getRect()->x, tempBodyCell.getRect()->y);
 				}
 
@@ -208,7 +264,10 @@ void Snake::moveByOne(GameWorld* gameWorld) {
 				body[0].setPosition(head.getRect()->x, head.getRect()->y);
 
 				// move the grid position right one
+				GridPosition headGP = body[0].getGridPosition();
+				body[0].setGridPosition(headGP.row, headGP.column + 1);
 				gridPosition.column += 1;
+
 				direction = RIGHT;
 			}
 			else {
@@ -224,6 +283,11 @@ void Snake::moveByOne(GameWorld* gameWorld) {
 	GridPosition gp2 = gameWorld->convertCoordsToRowCol(headCell.getRect()->x, headCell.getRect()->y);
 	Cell* gridCellCovered = gameWorld->getCell(gp2.row, gp2.column);
 	gridCellCovered->setOccupied(true);
+
+	if (flipMode == 0)
+		flipMode = 1;
+	else
+		flipMode = 0;
 }
 
 CollisionType Snake::checkCollisions(Snake* snakeToCheckAgainst) {
@@ -261,24 +325,28 @@ void Snake::increaseSize() {
 		newCell.setPosition(tailCellRect->x - tailCellRect->w, tailCellRect->y);
 		GridPosition gp = gameWorld.convertCoordsToRowCol(tailCellRect->x - tailCellRect->w, tailCellRect->y);
 		gameWorld.getCell(gp.row, gp.column)->setOccupied(true);
+		newCell.setGridPosition(body.at(body.size() - 1).getGridPosition().row, body.at(body.size() - 1).getGridPosition().column - 1);
 	}
 	else if (tailCellRect->x > penultCellRect->x) {
 		// tail is to the right of penultimate cell, add new cell to the right of tail
 		newCell.setPosition(tailCellRect->x + tailCellRect->w, tailCellRect->y);
 		GridPosition gp = gameWorld.convertCoordsToRowCol(tailCellRect->x + tailCellRect->w, tailCellRect->y);
 		gameWorld.getCell(gp.row, gp.column)->setOccupied(true);
+		newCell.setGridPosition(body.at(body.size() - 1).getGridPosition().row, body.at(body.size() - 1).getGridPosition().column + 1);
 	}
 	else if (tailCellRect->y < penultCellRect->y) {
 		// tail is above penultimate cell, add new cell above tail
 		newCell.setPosition(tailCellRect->x, tailCellRect->y - tailCellRect->h);
 		GridPosition gp = gameWorld.convertCoordsToRowCol(tailCellRect->x, tailCellRect->y - tailCellRect->h);
 		gameWorld.getCell(gp.row, gp.column)->setOccupied(true);
+		newCell.setGridPosition(body.at(body.size() - 1).getGridPosition().row - 1, body.at(body.size() - 1).getGridPosition().column);
 	}
 	else if (tailCellRect->y > penultCellRect->y) {
 		// tail is below penultimate cell, add new cell below tail
 		newCell.setPosition(tailCellRect->x, tailCellRect->y + tailCellRect->h);
 		GridPosition gp = gameWorld.convertCoordsToRowCol(tailCellRect->x, tailCellRect->y + tailCellRect->h);
 		gameWorld.getCell(gp.row, gp.column)->setOccupied(true);
+		newCell.setGridPosition(body.at(body.size() - 1).getGridPosition().row + 1, body.at(body.size() - 1).getGridPosition().column);
 	}
 	else { // we should not be here
 		printf("ERROR! increaseSize() function has entered a section of code it should not be in!\n");
@@ -289,16 +357,119 @@ void Snake::increaseSize() {
 	bodyLength++;
 }
 
-void Snake::render(SDL_Renderer* renderer) {
-	SDL_SetRenderDrawColor(renderer, head.getColor().r, head.getColor().g, head.getColor().b, 0xFF);
-	SDL_RenderFillRect(renderer, head.getRect());
+bool cellIsACorner(GridPosition firstGP, GridPosition secondGP) {
+	if (firstGP.row == secondGP.row || firstGP.column == secondGP.column)
+		return false;
+	else
+		return true;
+}
 
-	SDL_SetRenderDrawColor(renderer, bodyColor.r, bodyColor.g, bodyColor.b, 0xFF);
-	
-	for (uint i = 1; i < body.size(); i++) {
-		//body[i].render(renderer);
-		SDL_RenderFillRect(renderer, body[i].getRect());
+void renderCorrectCorner(SDL_Renderer* renderer, GridPosition previousGP, GridPosition nextGP, GridPosition thisGP, SDL_Rect* cellRect, SpriteSheet* spriteSheet) {
+	SDL_RendererFlip flip;
+	int angleOfRotation = 0;
+	if (previousGP.row > nextGP.row) {
+		if (previousGP.column > nextGP.column) {
+			if (thisGP.row == previousGP.row) {
+				flip = SDL_FLIP_VERTICAL;
+				spriteSheet->render(renderer, 2, cellRect, angleOfRotation, &flip);
+			}
+			else {
+				angleOfRotation = 90;
+				spriteSheet->render(renderer, 2, cellRect, angleOfRotation);
+			}
+		}
+		else {
+			if (thisGP.row == previousGP.row) {
+				angleOfRotation = 180;
+				spriteSheet->render(renderer, 2, cellRect, angleOfRotation);
+			}
+			else {
+				flip = SDL_FLIP_VERTICAL;
+				angleOfRotation = 90;
+				spriteSheet->render(renderer, 2, cellRect, angleOfRotation, &flip);
+			}
+		}
 	}
+	else if (previousGP.row < nextGP.row) {
+		if (previousGP.column > nextGP.column) {
+			if (thisGP.row == previousGP.row) {
+				spriteSheet->render(renderer, 2, cellRect);
+			}
+			else {
+				flip = SDL_FLIP_HORIZONTAL;
+				angleOfRotation = 90;
+				spriteSheet->render(renderer, 2, cellRect, angleOfRotation, &flip);
+			}
+		}
+		else {
+			if (thisGP.row == previousGP.row) {
+				flip = SDL_FLIP_HORIZONTAL;
+				spriteSheet->render(renderer, 2, cellRect, angleOfRotation, &flip);
+			}
+			else {
+				angleOfRotation = 270;
+				spriteSheet->render(renderer, 2, cellRect, angleOfRotation);
+			}
+		}
+	}
+}
+
+void Snake::render(SDL_Renderer* renderer) {
+	int angleOfRotation = 0;
+
+	// render the head
+	SDL_Rect* headRect = head.getRect();
+	if (direction == UP)
+		angleOfRotation = 0;
+	else if (direction == RIGHT)
+		angleOfRotation = 90;
+	else if (direction == DOWN)
+		angleOfRotation = 180;
+	else
+		angleOfRotation = 270;
+	spriteSheet->render(renderer, 0, headRect, angleOfRotation);
+
+	GridPosition previousCellGP;
+	GridPosition thisCellGP;
+	GridPosition nextCellGP;
+
+	// render the body
+	SDL_Rect* currentBodyRect;
+	for (int i = 1; i < body.size() - 1; i++) {
+		currentBodyRect = body.at(i).getRect();
+
+		previousCellGP = body.at(i - 1).getGridPosition();
+		thisCellGP = body.at(i).getGridPosition();
+		nextCellGP = body.at(i + 1).getGridPosition();
+		if (cellIsACorner(previousCellGP, nextCellGP)) {
+			renderCorrectCorner(renderer, previousCellGP, nextCellGP, thisCellGP, currentBodyRect, spriteSheet);
+		}
+		else {
+			if (previousCellGP.column > thisCellGP.column)
+				angleOfRotation = 90;
+			else if (previousCellGP.column < thisCellGP.column)
+				angleOfRotation = 270;
+			else if (previousCellGP.row > thisCellGP.row)
+				angleOfRotation = 180;
+			else
+				angleOfRotation = 0;
+			spriteSheet->render(renderer, 1, currentBodyRect, angleOfRotation);
+		}
+	}
+
+	// finally, render the tail
+	currentBodyRect = body.at(body.size() - 1).getRect();
+	previousCellGP = body.at(body.size() - 2).getGridPosition();
+	thisCellGP = body.at(body.size() - 1).getGridPosition();
+	if (previousCellGP.column > thisCellGP.column)
+		angleOfRotation = 90;
+	else if (previousCellGP.column < thisCellGP.column)
+		angleOfRotation = 270;
+	else if (previousCellGP.row > thisCellGP.row)
+		angleOfRotation = 180;
+	else
+		angleOfRotation = 0;
+	spriteSheet->render(renderer, 3, currentBodyRect, angleOfRotation);
 }
 
 void Snake::setSnakeColor(SDL_Color color) {
@@ -321,6 +492,7 @@ void Snake::setBody(GameWorld* world) {
 	head.setPosition(elementRect->x, elementRect->y);
 	head.setDimensions(elementRect->w);
 	head.setOccupied(true);
+	head.setGridPosition(player1Row, player1Col);
 	body.push_back(head);
 
 	Cell bodyCell = Cell();
@@ -330,6 +502,7 @@ void Snake::setBody(GameWorld* world) {
 	bodyCell.setPosition(elementRect->x, elementRect->y);
 	bodyCell.setDimensions(elementRect->w);
 	bodyCell.setOccupied(true);
+	bodyCell.setGridPosition(player1Row + 1, player1Col);
 	body.push_back(bodyCell);
 
 	CellPtr = world->getCell(22, 4);
@@ -337,6 +510,7 @@ void Snake::setBody(GameWorld* world) {
 	elementRect = CellPtr->getRect();
 	bodyCell.setPosition(elementRect->x, elementRect->y);
 	bodyCell.setDimensions(elementRect->w);
+	bodyCell.setGridPosition(player1Row + 2, player1Col);
 	body.push_back(bodyCell);
 }
 
@@ -356,6 +530,7 @@ void Snake::setBody(GameWorld* world, playerNum player2) {
 	head.setPosition(elementRect->x, elementRect->y);
 	head.setDimensions(elementRect->w);
 	head.setOccupied(true);
+	head.setGridPosition(player2Row, player2Col);
 	body.push_back(head);
 
 	Cell bodyCell = Cell();
@@ -364,7 +539,7 @@ void Snake::setBody(GameWorld* world, playerNum player2) {
 	elementRect = CellPtr->getRect();
 	bodyCell.setPosition(elementRect->x, elementRect->y);
 	bodyCell.setDimensions(elementRect->w);
-	//bodyCell.setOccupied(true);
+	bodyCell.setGridPosition(player2Row, player2Col + 1);
 	body.push_back(bodyCell);
 
 	CellPtr = world->getCell(4, 22);
@@ -372,6 +547,7 @@ void Snake::setBody(GameWorld* world, playerNum player2) {
 	elementRect = CellPtr->getRect();
 	bodyCell.setPosition(elementRect->x, elementRect->y);
 	bodyCell.setDimensions(elementRect->w);
+	bodyCell.setGridPosition(player2Row, player2Col + 2);
 	body.push_back(bodyCell);
 }
 
@@ -395,7 +571,13 @@ void Snake::setWallCollision(bool collidedWithWall) {
 	wallCollision = collidedWithWall;
 }
 
+void Snake::setSnakeTexture(SpriteSheet* snakeTexture) {
+	spriteSheet = snakeTexture;
+}
+
+Cell* Snake::getHead() { return &head; }
 std::vector<Cell>* Snake::getBody() { return &body; }
+SDL_Color Snake::getColor() { return bodyColor; }
 
 SDL_Point Snake::getHeadPosition() {
 	SDL_Rect* headRect = head.getRect();
@@ -446,6 +628,10 @@ Cell PickUp::getCell() {
 	return puCell;
 }
 
+GridPosition PickUp::getPosition() {
+	return puPosition;
+}
+
 SizeUp::SizeUp() {
 	puPosition = { 0,0 };
 	Cell cell = Cell();
@@ -460,6 +646,9 @@ SizeUp::SizeUp(SDL_Color szColor, Cell* cell) {
 	puRect->w = cellRect->w;
 	puRect->h = cellRect->h;
 	puCell.setDimensions(puRect->h);
+	puCell.setGridPosition(cell->getGridPosition().row, cell->getGridPosition().column);
+	puPosition.column = cell->getGridPosition().column;
+	puPosition.row = cell->getGridPosition().row;
 }
 
 void SizeUp::handle(Snake snek) {
@@ -474,4 +663,8 @@ void SizeUp::render(SDL_Renderer* renderer) {
 
 Cell SizeUp::getCell() {
 	return puCell;
+}
+
+GridPosition SizeUp::getPosition() {
+	return puPosition;
 }

@@ -44,8 +44,11 @@ struct Snake {
 	void setDesiredDirection(Direction dir);
 	void increaseSpeed(uint inc);
 	void setWallCollision(bool collidedWithWall);
+	void setSnakeTexture(SpriteSheet* snakeTexture);
 
+	Cell* getHead();
 	std::vector<Cell>* getBody();
+	SDL_Color getColor();
 	SDL_Point getHeadPosition();
 	GridPosition getGridPosition(); // position in the grid of the head (row, col)
 	Direction getDirection();
@@ -57,8 +60,9 @@ private:
 	// TODO: add an array of grid positions so that resizing the snake will be easier
 	Cell head;
 	std::vector<Cell> body;
-	Texture* headTexture;
+	SpriteSheet* spriteSheet;
 	SDL_Color bodyColor;
+	int flipMode;
 
 	std::string name;
 
@@ -78,6 +82,7 @@ struct PickUp {
 	virtual void render(SDL_Renderer* renderer);
 
 	virtual Cell getCell();
+	GridPosition getPosition();
 
 protected:
 	Cell puCell;
@@ -91,6 +96,7 @@ struct SizeUp : public PickUp {
 	void handle(Snake snek) override;
 	void render(SDL_Renderer* renderer) override;
 	Cell getCell() override;
+	GridPosition getPosition();
 };
 
 #endif // !ACTOR_H
