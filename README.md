@@ -1,1 +1,1 @@
-A real-time online multiplayer Snake/Tron hybrid
+A real-time Snake game
