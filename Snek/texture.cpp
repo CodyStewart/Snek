@@ -169,3 +169,58 @@ void TextTexture::free() {
 		height = 0;
 	}
 }
+
+SpriteSheet::SpriteSheet() {
+	texture = nullptr;
+	width = 0;
+	height = 0;
+	spriteWidth = 0;
+	spriteHeight = 0;
+	numOfSprites = 0;
+}
+
+bool SpriteSheet::loadSpriteSheet(SDL_Renderer* renderer, std::string path, int width, int height, int sprites) {
+	if (Texture::loadTextureFromFile(renderer, path)) {
+		spriteWidth = width;
+		spriteHeight = height;
+		numOfSprites = sprites;
+		
+		return true;
+	}
+	else
+		return false;
+}
+
+void SpriteSheet::render(SDL_Renderer* renderer, int spriteToRender, SDL_Rect* renderSurface, double angle, SDL_RendererFlip* flip, SDL_Rect* clip, SDL_Point* center) {
+	if (texture != NULL) {
+		SDL_Rect sprite = {};
+		int spriteXPos = spriteToRender * spriteWidth;
+		sprite.x = spriteXPos;
+		sprite.y = 0;
+		sprite.w = spriteWidth;
+		sprite.h = spriteHeight;
+
+		if (clip != NULL) {
+			sprite.x += clip->x;
+			sprite.y = clip->y;
+			sprite.w = clip->w;
+			sprite.h = clip->h;
+		}
+
+		double rotation;
+		if (angle == NULL)
+			rotation = 0;
+		else
+			rotation = angle;
+
+		SDL_RendererFlip flipMode;
+		if (flip == NULL) {
+			flipMode = SDL_FLIP_NONE;
+		}
+		else {
+			flipMode = *flip;
+		}
+
+		SDL_RenderCopyEx(renderer, texture, &sprite, renderSurface, rotation, center, flipMode);
+	}
+}

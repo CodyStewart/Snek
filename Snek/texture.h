@@ -62,4 +62,17 @@ private:
 	Uint32 flashTime;
 };
 
+struct SpriteSheet : public Texture {
+	SpriteSheet();
+
+	bool loadSpriteSheet(SDL_Renderer* renderer, std::string path, int width, int height, int sprites);
+
+	void render(SDL_Renderer* renderer, int spriteToRender, SDL_Rect* renderSurface, double angle = NULL, SDL_RendererFlip* flip = NULL, SDL_Rect* clip = NULL, SDL_Point* center = NULL);
+
+private:
+	int spriteWidth;
+	int spriteHeight;
+	int numOfSprites;
+};
+
 #endif // !TEXTURE_H

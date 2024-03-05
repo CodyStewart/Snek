@@ -79,6 +79,8 @@ Menu* twoPlayerSubMenu;
 Menu* inGameMenu;
 
 Texture mainMenuTexture = Texture();
+SpriteSheet player1Sheet = SpriteSheet();
+SpriteSheet player2Sheet = SpriteSheet();
 
 Animation player1Appear = Animation();
 Animation player1Idle = Animation();
@@ -146,8 +148,8 @@ void player1FallingAnimation(Snake* snek) {
 	if (numOfTimesCalled > 10)
 		numOfTimesCalled = 0;
 
-	if (zoomFactor <= snakeHead->getRect()->w)
-		beginGame = true;
+	//if (zoomFactor <= snakeHead->getRect()->w)
+	beginGame = true;
 }
 
 void player2FallingAnimation(Snake* snek) {
@@ -264,6 +266,7 @@ void OnePlayerStartAI() {
 
 void BackToMainMenu() {
 	inOnePlayerSubMenu = false;
+	inTwoPlayerSubMenu = false;
 	inMainMenu = true;
 
 	player1Quizical.stopAnimation();
@@ -382,9 +385,20 @@ bool loadMedia() {
 	bool success = true;
 
 	// load main menu title
-	if (!mainMenuTexture.loadTextureFromFile(renderer, "openingAnimations/snakeTitle3.png"))
-	{
+	if (!mainMenuTexture.loadTextureFromFile(renderer, "openingAnimations/snakeTitle3.png")) {
 		printf("Failed to load title screen texture!\n");
+		success = false;
+	}
+
+	// load player 1 textures
+	if (!player1Sheet.loadSpriteSheet(renderer, "player1Sprites.png", 64, 64, 4)) {
+		printf("Failed to load player 1's textures!\n");
+		success = false;
+	}
+
+	// load player 2 textures
+	if (!player2Sheet.loadSpriteSheet(renderer, "player2Sprites.png", 64, 64, 4)) {
+		printf("Failed to load player 2's textures!\n");
 		success = false;
 	}
 
@@ -717,6 +731,9 @@ int main(int argc, char* args[]) {
 			bool pauseGame = false;
 
 			SDL_Event e;
+
+			snake.setSnakeTexture(&player1Sheet);
+			rival.setSnakeTexture(&player2Sheet);
 
 			Uint32 startTime = SDL_GetTicks();
 			Uint32 endTime = 0;
